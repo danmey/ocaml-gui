@@ -2,7 +2,22 @@ open Draw
 
 open BatPervasives
 
-let display_size = (1280, 800)
+let panel_height = 20
+
+let system_with_out str =
+  let o = BatUnix.open_process_in ~autoclose:true ~cleanup:true str in
+    BatString.strip (BatIO.read_all o)
+
+let display_size =
+  let w,h = 
+    BatString.split 
+      (system_with_out "xrandr \\
+                      | sed -n 's/^.*current \\([^ ]\\+\\) x \\([^ ]\\+\\), .*$/\\1 \\2/p'") " "
+  in
+    Printf.printf "'%s' '%s'" w h;
+    flush stdout;
+    int_of_string w, int_of_string h - panel_height
+
 let font_size = 11
 (* let face = ref None *)
 
@@ -131,7 +146,8 @@ class graphical = object ( self : 'self )
   method draw (f : (Rect.t -> Draw.t list)) = f self#rect
   method invalidate r = rect <- r
   method rect = rect
-  method hit (p : Pos.t) = Rect.is_in self#rect p
+  method hit (p : Pos.t) = 
+    Rect.is_in self#rect p
   method set_parent new_parent = parent <- Some new_parent
   method parent = match parent with Some parent -> parent | None -> failwith "parent"
 end
@@ -172,6 +188,9 @@ end
 let on_mouse parent widget event pos = 
   let rect = parent#rect in
   let pos2 = Rect.pos rect in
+    Printf.printf "rect: %s: \n" (Rect.string_of_rect rect);
+    Printf.printf "on_mouse: %s: \n" (Pos.to_string pos);
+    flush stdout;
     widget#on_mouse event (Pos.sub pos pos2)
 
 let on_mouse_motion parent widget pos = 
@@ -210,7 +229,7 @@ class ['a,'b] draggable layout  = object ( self : 'self )
   val mutable clicked = 0,0
 
   method on_mouse e p =
-    begin 
+    begin
       match e with
 	| Glut.DOWN -> if super#hit p then 
 	    begin
@@ -315,7 +334,7 @@ let draw draw_list =
     let w,h = w+1, h+1 
  in
     Gl.enable `scissor_test; 
-      Printf.printf "%d %d, %d %d\n" x y w h;
+    Printf.printf "%d %d, %d %d\n" x y w h;
 (*      GlMisc.pop_attrib(); *)
       
     GlMisc.scissor 
@@ -349,8 +368,7 @@ let display () =
   Gl.disable `scissor_test;
   GlClear.color (0.0,0.0,0.0);
   GlClear.clear [ `color; `depth];
-  
-  GluMat.perspective ~fovy:60. ~aspect:1.33 ~z:(0.1,100.0);
+  GluMat.perspective ~fovy:60. ~aspect:1.6 ~z:(0.1,100.0);
   Gl.disable `depth_test ;
   Gl.disable `cull_face ;
   GlMat.mode `projection;
@@ -358,7 +376,8 @@ let display () =
   GlMat.mode `modelview;
   GlMat.load_identity ();
   with_view (fun() -> draw_lst **> draw layout#on_draw);
-  Glut.swapBuffers ()
+  Glut.swapBuffers ();
+  ignore(Unix.select [] [] [] 0.001)
 ;;
 
 let on_mouse_motion ~x ~y = layout#on_mouse_motion (x,y)
@@ -374,9 +393,9 @@ let m =
   Glut.initDisplayMode ~double_buffer:true ();
   ignore (Glut.createWindow ~title:"OpenGL Demo");
   let w = new component in
-(*    w#invalidate (Rect.rect (0,0) (200,200));*)
+    (* w#invalidate (Rect.rect (0,0) (200,200)); *)
     layout#add 0 w;
-    layout#invalidate (Rect.rect (50,50) (400,400));
+    layout#invalidate (Rect.rect (0,20) (400,400));
   Glut.displayFunc ~cb:display;
   Glut.idleFunc ~cb:(Some Glut.postRedisplay);
   Glut.motionFunc ~cb:on_mouse_motion;

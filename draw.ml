@@ -11,6 +11,7 @@ module Pos = struct
   let set_y p ay = (x p, ay)
   let add_x p p' = (x p + x p', y p)
   let add_y p p' = (x p,y p + y p')
+  let to_string (x,y) = Printf.sprintf "(%d, %d)" x y
 end
 module Rect = struct
   type t = {mutable x:int; mutable y:int; mutable w:int; mutable h:int}
