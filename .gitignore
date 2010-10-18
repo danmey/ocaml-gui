@@ -1,0 +1,7 @@
+_log
+_build
+_junk
+*.native
+*.byte
+*.d.native
+*.p.byte
