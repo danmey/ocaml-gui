@@ -25,6 +25,7 @@ let default_painter rect =
 
 let default rect = { pos = rect; children = []; painter = default_painter }
 
+let empty_window () = default Rect.o
 let desktop = default Rect.o
 
 let shelf rect = desktop.pos <- rect
@@ -47,10 +48,10 @@ let with_scisor rect f =
 let desktop_rect = Rect.rect (0,0) Display.display_size
 
 let rec draw_window window =
-  let rec draw_client_window rect { pos; children } =
+  let rec draw_client_window rect { pos; children; painter } =
     let client_rect = Rect.place_in pos rect in
     with_scisor rect (fun () ->
-      default_painter client_rect;
+      painter client_rect;
       List.iter (draw_client_window client_rect) children)
   in
   draw_client_window desktop_rect window
