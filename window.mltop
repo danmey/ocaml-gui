@@ -1,0 +1,6 @@
+#require "batteries";;
+#require "lablGL";;
+#require "lablGL.glut";;
+#directory "_build";;
+#load "draw.cmo";;
+
