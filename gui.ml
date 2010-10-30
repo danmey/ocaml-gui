@@ -1,22 +1,6 @@
 open Draw
-
+open Event
 open BatPervasives
-
-let panel_height = 20
-
-let system_with_out str =
-  let o = BatUnix.open_process_in ~autoclose:true ~cleanup:true str in
-    BatString.strip (BatIO.read_all o)
-
-let display_size =
-  let w,h = 
-    BatString.split 
-      (system_with_out "xrandr \\
-                      | sed -n 's/^.*current \\([^ ]\\+\\) x \\([^ ]\\+\\), .*$/\\1 \\2/p'") " "
-  in
-    Printf.printf "'%s' '%s'" w h;
-    flush stdout;
-    int_of_string w, int_of_string h - panel_height
 
 let font_size = 11
 (* let face = ref None *)
@@ -65,7 +49,7 @@ let with_view f =
   GlMat.mode `projection;
   GlMat.push();
   GlMat.load_identity ();
-  let w,h = display_size in
+  let w,h = Display. display_size in
     GlDraw.viewport ~x:0 ~y:0 ~w:w ~h:h;
     GlMat.ortho ~x:(0.,float w) ~y:(float h,0.0) ~z:(0.0,1.);
     let res = f() in
@@ -159,6 +143,8 @@ type event =
   | HorizontalDrag
   | Drag of Rect.t
   | Maximize
+
+(* let signals = Hashtbl.create 100 *)
 
 class interactive = object ( self : 'self )
   inherit graphical as super
@@ -321,13 +307,13 @@ class component  = object ( self : 'self)
     (self#get Bar)#set_layout (window_bar_layout 10)
 end
 
-let layout = (new frame)
+(* let layout = (new frame) *)
 
 let inter = new interactive
 
 let draw draw_list = 
   let sciss rect = fun () -> 
-    let w, h = display_size in
+    let w, h = Display.display_size in
     let x,y = Rect.pos rect in
     let y = h/2-y-1 in
     let w,h = Rect.size rect in
@@ -342,7 +328,7 @@ let draw draw_list =
       ~width:w
       ~height:h;
 
-(*     GlMisc.push_attrib [`scissor]; *)
+(*     glmisc.push_attrib [`scissor]; *)
 (*
     GlMisc.scissor 
       ~y:(349) ~x:50
@@ -362,7 +348,24 @@ let draw draw_list =
       [Draw.Custom (sciss rect)] @ List.flatten **> List.map (loop rect) lst
 
   in
-    loop (Rect.rect (0,0) display_size) draw_list
+    loop (Rect.rect (0,0) Display.display_size) draw_list
+
+open BatFloat
+(* let draw_quad () = *)
+(*   (\* gl.enable `color_material; *\) *)
+(*   (\* gldraw.color (1.0,1.0,1.0); *\) *)
+(*    GlDraw.begins `quads; *)
+(*   (\* GlDraw.color (1.0,1.0,1.0); *\) *)
+(*    GlDraw.vertex ~x ~y (); *)
+(*   (\* GlDraw.color (1.0,1.0,1.0); *\) *)
+(*    GlDraw.vertex ~x:(x + w) ~y (); *)
+(*   (\* GlDraw.color (1.0,1.0,1.0); *\) *)
+(*    GlDraw.vertex ~x:(x + w) ~y:(y + h) (); *)
+(*   (\* GlDraw.color (1.0,1.0,1.0); *\) *)
+(*    GlDraw.vertex ~x ~y:(y + h) (); *)
+(*    GlDraw.ends (); *)
+   
+(*    () *)
 
 let display () =
   Gl.disable `scissor_test;
@@ -375,27 +378,32 @@ let display () =
   GlMat.load_identity ();
   GlMat.mode `modelview;
   GlMat.load_identity ();
-  with_view (fun() -> draw_lst **> draw layout#on_draw);
-  Glut.swapBuffers ();
+  (* with_view (fun() -> draw_lst **> draw layout#on_draw); *)
+  with_view (fun () -> Window.draw_desktop ());
+  (* with_view draw_quad; *)
+   Glut.swapBuffers ();
   ignore(Unix.select [] [] [] 0.001)
 ;;
 
-let on_mouse_motion ~x ~y = layout#on_mouse_motion (x,y)
+let on_mouse_motion ~x ~y = () (* layout#on_mouse_motion (x,y) *)
 
 let on_mouse  ~button ~state ~x ~y =
   print_endline (Glut.string_of_button_state state);
   flush stdout;
-  mouse_state := (button, state);
-  layout#on_mouse state (x,y)
+  mouse_state := (button, state)
+  (* layout#on_mouse state (x,y) *)
+
 
 let m =
   ignore( Glut.init Sys.argv );
   Glut.initDisplayMode ~double_buffer:true ();
   ignore (Glut.createWindow ~title:"OpenGL Demo");
-  let w = new component in
-    (* w#invalidate (Rect.rect (0,0) (200,200)); *)
-    layout#add 0 w;
-    layout#invalidate (Rect.rect (0,20) (400,400));
+  Window.shelf (Rect.rect (100,100) (250,250));
+  Window.add Window.desktop (Rect.rect (50,50) (450,450));
+  (* let w = new component in *)
+  (*   (\* w#invalidate (Rect.rect (0,0) (200,200)); *\) *)
+  (*   layout#add 0 w; *)
+  (*   layout#invalidate (Rect.rect (0,20) (400,400)); *)
   Glut.displayFunc ~cb:display;
   Glut.idleFunc ~cb:(Some Glut.postRedisplay);
   Glut.motionFunc ~cb:on_mouse_motion;

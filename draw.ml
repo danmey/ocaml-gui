@@ -30,6 +30,8 @@ module Rect = struct
   let place_in r1 r2 = let p = pos r2 in by r1 p
   let border n r = rect (r.x + n / 2, r.y + n / 2) (r.w - n, r.h - n)
   let string_of_rect r = Printf.sprintf "Rect(%d,%d,%d,%d)" r.x r.y r.w r.h
+  let lift4 f { x; y; w; h; } = f x, f y, f w, f h
+  let lift22 f g  { x; y; w; h; } = f x, f y, g w,g h
 end
 module Draw = struct
   type t =
@@ -103,4 +105,6 @@ let draw el =
     GlArray.color `four color;
     GlArray.draw_arrays `quads ~first:0 ~count:((Raw.length vertices)/2);
 end
+
+
 ;;
