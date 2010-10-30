@@ -396,16 +396,13 @@ let on_mouse  ~button ~state ~x ~y =
   (* layout#on_mouse state (x,y) *)
 
 
-let m =
+let init build =
   ignore( Glut.init Sys.argv );
   Glut.initDisplayMode ~double_buffer:true ();
   ignore (Glut.createWindow ~title:"OpenGL Demo");
-  let g = new desktop in
-  g#invalidate (Rect.rect (50,50) (400,400));
-  let g1 = (new splitter :> graphical) in
-  g1#invalidate (Rect.rect (10,10) (350,350));
-  g#add g1;
+  build ();
   Window.shelf (Rect.rect (0,0) Display.display_size);
+
   (* Window.add Window.desktop (Rect.rect (50,50) (450,450)); *)
   (* let w = new component in *)
   (*   (\* w#invalidate (Rect.rect (0,0) (200,200)); *\) *)

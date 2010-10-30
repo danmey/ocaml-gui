@@ -19,8 +19,16 @@ module Rect = struct
   let size r = (r.w,r.h)
   let abs_dim r = (r.x, r.y),(r.x+r.w,r.y+r.h)
   let pos r = (r.x, r.y)
+  let subr r1 r2 = 
+    let p1 = pos r1 in 
+    let p2 = pos r2 in 
+    rect (Pos.sub p2 p1) (size r1)
   let set_pos r (x,y) = r.x <- x; r.y <- y
   let is_in r (x,y) = x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h
+  let together r1 r2 =
+    let x, y = max r1.x r2.x, max r1.y r2.y in
+    let x',y' = min (r1.x + r1.w) (r2.x + r2.w), min (r1.y + r1.h) (r2.y + r2.h) in
+    rect (x,y) (x'-x, y'-y)
   let pos_in r (x,y) = (x-r.x,y-r.y)
   let fold2 f r (x,y) = {r with x=f r.x x; y=f r.y y}
   let sub = fold2 (-)

@@ -52,7 +52,7 @@ let rec draw_window window =
     let client_rect = Rect.place_in pos rect in
     with_scisor rect (fun () ->
       painter client_rect;
-      List.iter (draw_client_window client_rect) children)
+      List.iter (draw_client_window (together rect client_rect)) children)
   in
   draw_client_window desktop_rect window
 
@@ -97,6 +97,11 @@ let abs_pos window =
   List.fold_left 
     (fun rect { pos } -> 
       Rect.place_in pos rect) desktop.pos path
-    
+
+let relative_pos window_relative window =
+  let window_relative_pos = abs_pos window_relative in
+  let window_pos = abs_pos window in
+  Rect.subr window_relative_pos window_pos
+
 let client_pos window global_pos = 
   Pos.sub global_pos (pos (abs_pos window))

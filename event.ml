@@ -5,7 +5,7 @@ type event =
   | MouseUp of Pos.t
   | MouseMotion of Pos.t
   | DoubleClick of Pos.t
-  | Drag
+  | Drag of Pos.t
 
 
 type signal = { callback : (Window.window -> event -> unit); }
@@ -25,8 +25,9 @@ let pre_process_event window =
         let new_pos = Pos.sub p last_pos in
         last_motion_pos := Some p;
         MouseMotion (Window.client_pos window new_pos))
+  | a -> a
 
-let run_events event =
+let run_events from_window event =
   Hashtbl.iter 
     (fun window { callback } ->
       match event with
@@ -34,11 +35,12 @@ let run_events event =
         | MouseUp p ->
             (if Rect.is_in (Window.abs_pos window) p 
             then callback window (pre_process_event window event))
-        | MouseMotion p -> callback window (pre_process_event window event)) signals
+        | MouseMotion p -> callback window (pre_process_event window event)
+        | a -> callback from_window event) signals
 
-let mouse_handler ~button ~state ~x ~y = run_events 
+let mouse_handler ~button ~state ~x ~y = run_events Window.desktop
   (match state with
     | Glut.DOWN -> MouseDown (x, y)
     | Glut.UP -> MouseUp (x, y))
 
-let mouse_motion_handler ~x ~y = run_events (MouseMotion (x,y))
+let mouse_motion_handler ~x ~y = run_events Window.desktop (MouseMotion (x,y))
