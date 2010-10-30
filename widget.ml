@@ -21,7 +21,7 @@ let quad_painter rect =
 
 class interactive = object ( self : 'self )
   inherit graphical as super
-  method event (window : Window.window) (ev : Event.event) = ()
+  method event (window : Window.window) (ev : Event.event) = false
   initializer 
     Event.register window
       (fun window ev -> self#event window ev)
@@ -34,8 +34,8 @@ class draggable = object ( self : 'self )
   val mutable state = Placed
   val mutable dragged_pos = (0,0)
   method event window = function
-    | Event.MouseDown p -> state <- Dragged; dragged_pos <- p;
-    | Event.MouseUp p -> state <- Placed
+    | Event.MouseDown p -> state <- Dragged; dragged_pos <- p; true
+    | Event.MouseUp p -> state <- Placed; true
     | Event.MouseMotion p -> 
       let window_pos = Rect.pos window.pos in
       let new_window_pos = 
@@ -43,8 +43,9 @@ class draggable = object ( self : 'self )
       self#drag_end new_window_pos;
       let dpos = Pos.sub new_window_pos window_pos in
       let w,h = Rect.size window.pos in
-        Event.run_events window (Event.Drag dpos)
-    | _ -> ()
+        Event.run_events window (Event.Drag dpos);
+      true
+    | _ -> false
   method drag_end pos =
     Rect.set_pos window.pos pos
     
@@ -94,8 +95,9 @@ class splitter first second constr1 = object ( self : 'self )
         let half =  half + 10 in
         let xs = half - 10 in
         first#invalidate (Rect.rect (0,0) (xs,h));
-        second#invalidate (Rect.rect (xs+20,0) (w-20,h))
-      | _ -> ()
+        second#invalidate (Rect.rect (xs+20,0) (w-20,h));
+          true
+      | _ -> false
 
   method invalidate rect = 
     super#invalidate rect;
@@ -108,7 +110,7 @@ class splitter first second constr1 = object ( self : 'self )
     second#invalidate (Rect.rect (xs+20,0) (w,h))
 end
 
-class dialog = object ( self : 'self )
+class block = object ( self : 'self )
   inherit composite as super
   val bar_widget = new draggable
     
@@ -119,8 +121,8 @@ class dialog = object ( self : 'self )
   method event (wind : Window.window) (ev : Event.event) = 
     match ev with
       | Event.Drag dpos when bar_widget#window == wind -> 
-        self#invalidate (Rect.by window.pos dpos)
-      | _ -> ()
+        self#invalidate (Rect.by window.pos dpos); true
+      | _ -> false
 
   method invalidate rect = 
     super#invalidate rect;

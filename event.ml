@@ -8,7 +8,7 @@ type event =
   | Drag of Pos.t
 
 
-type signal = { callback : (Window.window -> event -> unit); }
+type signal = { callback : (Window.window -> event -> bool); }
 
 let signals : (Window.window, signal) Hashtbl.t = Hashtbl.create 100
 
@@ -27,16 +27,26 @@ let pre_process_event window =
         MouseMotion (Window.client_pos window new_pos))
   | a -> a
 
+let focused_window = ref None
 let run_events from_window event =
-  Hashtbl.iter 
-    (fun window { callback } ->
-      match event with
-        | MouseDown p 
-        | MouseUp p ->
-            (if Rect.is_in (Window.abs_pos window) p 
-            then callback window (pre_process_event window event))
-        | MouseMotion p -> callback window (pre_process_event window event)
-        | a -> callback from_window event) signals
+  ignore(Hashtbl.fold
+    (fun window { callback } consumed ->
+      if not consumed then
+          match event with
+            | MouseDown p ->
+              (if Rect.is_in (Window.abs_pos window) p 
+               then (focused_window := Some window; callback window (pre_process_event window event)) else consumed)
+            | MouseUp p ->
+              (if Rect.is_in (Window.abs_pos window) p
+               then (focused_window := None; callback window (pre_process_event window event))
+               else consumed)
+          | MouseMotion _-> 
+            (match !focused_window with
+              | None -> consumed
+              | Some window' -> if window == window' then callback window (pre_process_event window event) else consumed)
+          | a -> callback window event
+       else consumed) signals false)
+
 
 let mouse_handler ~button ~state ~x ~y = run_events Window.desktop
   (match state with

@@ -81,8 +81,9 @@ let window_path window =
       match children with
         | [] -> None
         | windows ->
-          List.find bool_of_option
+          try List.find bool_of_option
             (List.map (fun w -> find_loop (w :: path) w) windows)
+          with _ -> None
   in
   match find_loop [] desktop with
     | None -> failwith "window_path: window not found."
