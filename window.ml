@@ -88,9 +88,7 @@ let window_path window =
     | None -> failwith "window_path: window not found."
     | Some path -> List.rev path
 
-
-let add parent rect =
-  let window = default rect in
+let add parent window =
   parent.children <-  window :: parent.children;
   window
 
@@ -100,3 +98,5 @@ let abs_pos window =
     (fun rect { pos } -> 
       Rect.place_in pos rect) desktop.pos path
     
+let client_pos window global_pos = 
+  Pos.sub global_pos (pos (abs_pos window))

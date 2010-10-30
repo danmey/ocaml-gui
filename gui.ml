@@ -385,7 +385,8 @@ let display () =
   ignore(Unix.select [] [] [] 0.001)
 ;;
 
-let on_mouse_motion ~x ~y = () (* layout#on_mouse_motion (x,y) *)
+(* let on_mouse_motion ~x ~y = () (\* layout#on_mouse_motion (x,y) *\) *)
+let on_mouse_motion ~x ~y = Event.mouse_motion_handler ~x ~y
 
 let on_mouse  ~button ~state ~x ~y =
   print_endline (Glut.string_of_button_state state);
@@ -399,9 +400,12 @@ let m =
   ignore( Glut.init Sys.argv );
   Glut.initDisplayMode ~double_buffer:true ();
   ignore (Glut.createWindow ~title:"OpenGL Demo");
-  let g = new interactive in
-  g#invalidate (Rect.rect (50,50) (100,100));
-  Window.shelf (Rect.rect (100,100) (250,250));
+  let g = new desktop in
+  g#invalidate (Rect.rect (50,50) (400,400));
+  let g1 = (new splitter :> graphical) in
+  g1#invalidate (Rect.rect (10,10) (350,350));
+  g#add g1;
+  Window.shelf (Rect.rect (0,0) Display.display_size);
   (* Window.add Window.desktop (Rect.rect (50,50) (450,450)); *)
   (* let w = new component in *)
   (*   (\* w#invalidate (Rect.rect (0,0) (200,200)); *\) *)
