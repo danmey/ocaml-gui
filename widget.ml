@@ -33,7 +33,7 @@ class draggable = object ( self : 'self )
   inherit interactive as super
   val mutable state = Placed
   val mutable dragged_pos = (0,0)
-  method event window = function
+  method event wind = function
     | Event.MouseDown p -> state <- Dragged; dragged_pos <- p; true
     | Event.MouseUp p -> state <- Placed; true
     | Event.MouseMotion p -> 
@@ -44,6 +44,7 @@ class draggable = object ( self : 'self )
       let dpos = Pos.sub new_window_pos window_pos in
       let w,h = Rect.size window.pos in
         Event.run_events window (Event.Drag dpos);
+      print_endline "drag3";
       true
     | _ -> false
   method drag_end pos =
@@ -88,14 +89,12 @@ class splitter first second constr1 = object ( self : 'self )
 
   method event (window : Window.window) (ev : Event.event) = 
     match ev with
-      | Event.Drag (_, _) when split_widget#window == window -> 
-        let x, y = Rect.pos window.pos in
-        let w, h = Rect.size window.pos in
-        let half,_ = Rect.pos split_widget#window.pos in
-        let half =  half + 10 in
-        let xs = half - 10 in
-        first#invalidate (Rect.rect (0,0) (xs,h));
-        second#invalidate (Rect.rect (xs+20,0) (w-20,h));
+      | Event.Drag (dx, _) when split_widget#window == window -> 
+        let w1,h = Rect.size first#window.pos in
+        let w2,_ = Rect.size second#window.pos in
+        let x2,_ = Rect.pos second#window.pos in
+        first#invalidate (Rect.rect (0,0) (w1+dx,h));
+        second#invalidate (Rect.rect (x2+dx,0) (w2-dx,h));
           true
       | _ -> false
 
@@ -107,6 +106,7 @@ class splitter first second constr1 = object ( self : 'self )
     let xs = half - 10 in
     split_widget#invalidate (Rect.rect (xs,0) (20,h));
     first#invalidate (Rect.rect (0,0) (xs,h));
+    Printf.printf "half: %d\n" xs;
     second#invalidate (Rect.rect (xs+20,0) (w,h))
 end
 
@@ -120,7 +120,8 @@ class block = object ( self : 'self )
 
   method event (wind : Window.window) (ev : Event.event) = 
     match ev with
-      | Event.Drag dpos when bar_widget#window == wind -> 
+      | Event.Drag dpos when bar_widget#window == wind ->
+        print_endline "drag2";
         self#invalidate (Rect.by window.pos dpos); true
       | _ -> false
 
