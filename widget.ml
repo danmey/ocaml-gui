@@ -49,12 +49,13 @@ class draggable = object ( self : 'self )
   method drag pos dpos =
     Rect.set_pos window.pos pos
   method drag_end = ()
-    
+
 end
 
 class composite = object ( self : 'self )
   inherit interactive as super
-  method add (widget : graphical) = Window.add window (widget#window)
+  val mutable widgets = []
+  method add (widget : graphical) = Window.add window (widget#window); widgets <- widget :: widgets
 end
 
 class desktop =  object ( self : 'self )
@@ -100,14 +101,14 @@ class splitter first second constr1 = object ( self : 'self )
 
   method invalidate rect = 
     super#invalidate rect;
-    let x,y = Rect.pos rect in
-    let w,h = Rect.size rect in
+    let x,y = Rect.pos window.pos in
+    let w,h = Rect.size window.pos in
     let half = x+w/2 in
     let xs = half - 10 in
     split_widget#invalidate (Rect.rect (xs,0) (20,h));
     first#invalidate (Rect.rect (0,0) (xs,h));
     Printf.printf "half: %d\n" xs;
-    second#invalidate (Rect.rect (xs+20,0) (w,h))
+    second#invalidate (Rect.rect (xs,0) (w,h))
 end
 
 class block = object ( self : 'self )
@@ -176,4 +177,22 @@ class slider = object ( self : 'self )
   method drag_end =
     value <- value +. drag_value;
     drag_value <- 0.
-end   
+end
+
+type layout = Rect.t -> Rect.t -> int -> int -> Rect.t
+let horizontal_layout spacing parent_rect _ c i =
+  let (w,h) = Rect.size parent_rect in
+  let s = w / c in
+    Rect.rect ((i * s)+spacing, 0) (s-2*spacing,h)
+
+class frame layout = object ( self : 'self )
+  inherit composite as super
+    
+  method invalidate rect =
+    super#invalidate rect;
+    let count = List.length window.children in
+    BatList.iteri (fun i w ->
+      let local_rect = layout (window.pos) (w#window.pos) count i in
+      w # invalidate local_rect) widgets
+end
+
