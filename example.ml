@@ -4,11 +4,11 @@ let _ =
   Gui.init 
     (fun () ->
       let g = new desktop in
-      let w1 = new frame (horizontal_layout 5) in
+      let w1 = new frame (fixed_horizontal_layout 5 60) in
       let w2 = new frame (horizontal_layout 5) in
-      let split = ((new splitter w1 w2 Horizontal) :> graphical) in
+      let split = ((new splitter w1 w2 Vertical) :> graphical) in
       g#add split;
-      for i = 0 to 0 do
+      for i = 0 to 10 do
         let block = (new slider :> graphical) in
         w1#add block
       done;

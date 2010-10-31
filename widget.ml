@@ -90,25 +90,44 @@ class splitter first second constr1 = object ( self : 'self )
 
   method event (window : Window.window) (ev : Event.event) = 
     match ev with
-      | Event.Drag (dx, _) when split_widget#window == window -> 
-        let w1,h = Rect.size first#window.pos in
-        let w2,_ = Rect.size second#window.pos in
-        let x2,_ = Rect.pos second#window.pos in
-        first#invalidate (Rect.rect (0,0) (w1+dx,h));
-        second#invalidate (Rect.rect (x2+dx,0) (w2-dx,h));
-          true
+      | Event.Drag (dx, dy) when split_widget#window == window ->
+        (match constr with
+          | Horizontal ->
+            let w1,h = Rect.size first#window.pos in
+            let w2,_ = Rect.size second#window.pos in
+            let x2,_ = Rect.pos second#window.pos in
+            first#invalidate (Rect.rect (0,0) (w1+dx,h));
+            second#invalidate (Rect.rect (x2+dx,0) (w2-dx,h));
+            true
+          | Vertical ->
+            let w,h1 = Rect.size first#window.pos in
+            let _,h2 = Rect.size second#window.pos in
+            let _,y2 = Rect.pos second#window.pos in
+            first#invalidate (Rect.rect (0,0) (w, h1+dy));
+            second#invalidate (Rect.rect (0, y2+dy) (w,h2-dy));
+            true)
       | _ -> false
 
   method invalidate rect = 
-    super#invalidate rect;
-    let x,y = Rect.pos window.pos in
-    let w,h = Rect.size window.pos in
-    let half = x+w/2 in
-    let xs = half - 10 in
-    split_widget#invalidate (Rect.rect (xs,0) (20,h));
-    first#invalidate (Rect.rect (0,0) (xs,h));
-    Printf.printf "half: %d\n" xs;
-    second#invalidate (Rect.rect (xs,0) (w,h))
+        (match constr with
+          | Horizontal ->
+            super#invalidate rect;
+            let x,y = Rect.pos window.pos in
+            let w,h = Rect.size window.pos in
+            let half = x+w/2 in
+            let xs = half - 10 in
+            split_widget#invalidate (Rect.rect (xs,0) (20,h));
+            first#invalidate (Rect.rect (0,0) (xs,h));
+            second#invalidate (Rect.rect (xs,0) (w,h))
+          | Vertical ->
+            super#invalidate rect;
+            let x,y = Rect.pos window.pos in
+            let w,h = Rect.size window.pos in
+            let half = x+h/2 in
+            let ofs = half - 10 in
+            split_widget#invalidate (Rect.rect (0,ofs) (w, 20));
+            first#invalidate (Rect.rect (0,0) (w, ofs));
+            second#invalidate (Rect.rect (0, ofs) (w,h)))
 end
 
 class block = object ( self : 'self )
@@ -184,6 +203,27 @@ let horizontal_layout spacing parent_rect _ c i =
   let (w,h) = Rect.size parent_rect in
   let s = w / c in
     Rect.rect ((i * s)+spacing, 0) (s-2*spacing,h)
+
+let vertical_layout spacing parent_rect _ c i =
+  let (w,h) = Rect.size parent_rect in
+  let s = h / c in
+    Rect.rect (0, (i * s)+spacing) (w, s-2*spacing)
+
+let fixed_vertical_layout spacing height parent_rect d c i =
+  let (w,h) = Rect.size parent_rect in
+  if (height + 2 * spacing) * c > h then
+    vertical_layout spacing parent_rect d c i
+  else
+    let ofs = (i * (height + 2 * spacing)) + spacing in
+    Rect.rect (spacing, ofs) (w-spacing*2,height)
+
+let fixed_horizontal_layout spacing width parent_rect d c i =
+  let (w,h) = Rect.size parent_rect in
+  if (width + 2 * spacing) * c > w then
+    horizontal_layout spacing parent_rect d c i
+  else
+    let ofs = (i * (width + 2 * spacing)) + spacing in
+    Rect.rect (ofs, spacing) (width, h-spacing*2)
 
 class frame layout = object ( self : 'self )
   inherit composite as super
