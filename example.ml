@@ -8,11 +8,12 @@ let _ =
       let w2 = new composite in
       let split = ((new splitter w1 w2 Horizontal) :> graphical) in
       g#add split;
-      for i = 0 to 1 do
-        let block = (new button :> graphical) in
+      for i = 0 to 0 do
+        let block = (new slider :> graphical) in
         block#invalidate (Rect.rect (i*60+10,10) (50,30));
         w2#add block
       done;
-      g#invalidate (Rect.rect (50,50) (400,400));
-      split#invalidate (Rect.rect (10,10) (350,350));
+      let w,h = Display.display_size in
+      g#invalidate (Rect.rect (0,0) (w,h));
+      split#invalidate (Rect.rect (10,10) (w-20,h-20));
       ())

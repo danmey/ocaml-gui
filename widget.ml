@@ -35,19 +35,20 @@ class draggable = object ( self : 'self )
   val mutable dragged_pos = (0,0)
   method event wind = function
     | Event.MouseDown p -> state <- Dragged; dragged_pos <- p; true
-    | Event.MouseUp p -> state <- Placed; true
+    | Event.MouseUp p -> state <- Placed; self#drag_end; true
     | Event.MouseMotion p -> 
       let window_pos = Rect.pos window.pos in
       let new_window_pos = 
         Pos.sub (Pos.add window_pos p) dragged_pos in
-      self#drag_end new_window_pos;
       let dpos = Pos.sub new_window_pos window_pos in
+      self#drag new_window_pos dpos;
       let w,h = Rect.size window.pos in
         Event.run_events window (Event.Drag dpos);
       true
     | _ -> false
-  method drag_end pos =
+  method drag pos dpos =
     Rect.set_pos window.pos pos
+  method drag_end = ()
     
 end
 
@@ -67,7 +68,7 @@ type constr = Horizontal | Vertical
 class draggable_constrained constr = object ( self : 'self )
   inherit draggable
   val mutable constr = constr
-  method drag_end pos =
+  method drag pos dpos =
     match constr with 
       | Horizontal -> window.pos.Rect.x <- fst pos
       | Vertical -> window.pos.Rect.y <- snd pos
@@ -159,3 +160,20 @@ class button = object ( self : 'self )
       | Event.MouseUp p -> window.painter <- caption_painter normal_caption; true
       | _ -> false
 end
+
+open BatInt
+class slider = object ( self : 'self )
+  inherit draggable_constrained Horizontal as super
+  val mutable value = 0.
+  val mutable step = 0.01
+  val mutable drag_value = 0.0
+  initializer
+    window.painter <- (fun rect -> caption_painter (Printf.sprintf "%2.2f" (drag_value +. value)) rect)
+
+  method drag _ (dx,_) =
+    drag_value <- step *. (float dx);
+    
+  method drag_end =
+    value <- value +. drag_value;
+    drag_value <- 0.
+end   
