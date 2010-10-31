@@ -82,12 +82,14 @@ class splitter first second constr1 = object ( self : 'self )
   val split_widget = new draggable_constrained constr1
   val first = first
   val second = second
+  val mutable formed = false
   initializer
     self#add (split_widget :> graphical);
     self#add (first :> graphical);
     self#add (second :> graphical);
     ()
 
+  (* VERY CRUFTY CODE, needs to tide up this! *)
   method event (window : Window.window) (ev : Event.event) = 
     match ev with
       | Event.Drag (dx, dy) when split_widget#window == window ->
@@ -107,8 +109,29 @@ class splitter first second constr1 = object ( self : 'self )
             second#invalidate (Rect.rect (0, y2+dy) (w,h2-dy));
             true)
       | _ -> false
+        
+  method invalidate_after_init rect =
+        (match constr with
+          | Horizontal ->
+            super#invalidate rect;
+            let x,y = Rect.pos window.pos in
+            let w,h = Rect.size window.pos in
+            let half = split_widget#window.pos.Rect.x + 10 in
+            let xs = half - 10 in
+            split_widget#invalidate (Rect.rect (xs,0) (20,h));
+            first#invalidate (Rect.rect (0,0) (xs,h));
+            second#invalidate (Rect.rect (xs,0) (w,h-xs))
+          | Vertical ->
+            super#invalidate rect;
+            let x,y = Rect.pos window.pos in
+            let w,h = Rect.size window.pos in
+            let half = split_widget#window.pos.Rect.y + 10 in
+            let ofs = half - 10 in
+            split_widget#invalidate (Rect.rect (0,ofs) (w, 20));
+            first#invalidate (Rect.rect (0,0) (w, ofs));
+            second#invalidate (Rect.rect (0, ofs+20) (w,h-ofs-20)))
 
-  method invalidate rect = 
+  method invalidate_before_init rect = 
         (match constr with
           | Horizontal ->
             super#invalidate rect;
@@ -127,7 +150,12 @@ class splitter first second constr1 = object ( self : 'self )
             let ofs = half - 10 in
             split_widget#invalidate (Rect.rect (0,ofs) (w, 20));
             first#invalidate (Rect.rect (0,0) (w, ofs));
-            second#invalidate (Rect.rect (0, ofs) (w,h)))
+            second#invalidate (Rect.rect (0, ofs+20) (w,h-ofs-20)))
+
+  method invalidate rect =
+    (if not formed then self#invalidate_before_init else self#invalidate_after_init) rect;
+      formed <- true;
+      
 end
 
 class block = object ( self : 'self )
