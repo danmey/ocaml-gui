@@ -44,7 +44,6 @@ class draggable = object ( self : 'self )
       let dpos = Pos.sub new_window_pos window_pos in
       let w,h = Rect.size window.pos in
         Event.run_events window (Event.Drag dpos);
-      print_endline "drag3";
       true
     | _ -> false
   method drag_end pos =
@@ -130,4 +129,33 @@ class block = object ( self : 'self )
     let x,y = Rect.pos rect in
     let w,h = Rect.size rect in
     bar_widget#invalidate (Rect.rect (0,0) (w,20))
+end
+
+open BatFloat
+let caption_painter text rect =
+   let x, y, w, h = center_rect rect in
+   GlDraw.begins `line_loop;
+   GlDraw.vertex ~x ~y ();
+   GlDraw.vertex ~x:(x + w) ~y ();
+   GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
+   GlDraw.vertex ~x ~y:(y + h) ();
+   GlDraw.ends ();
+   let len = float (text_width text) in
+   let ofs_x = (w - len) / 2. + x in
+   let ofs_y = (h - 10.) / 2. + y in
+   draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
+   ()
+
+class button = object ( self : 'self )
+  inherit interactive as super
+  val mutable normal_caption = "Push me!"
+  val mutable pushed_caption = "Pushed"
+  initializer
+    window.painter <- caption_painter normal_caption
+
+  method event (wind : Window.window) (ev : Event.event) = 
+    match ev with
+      | Event.MouseDown p -> window.painter <- caption_painter pushed_caption; true
+      | Event.MouseUp p -> window.painter <- caption_painter normal_caption; true
+      | _ -> false
 end

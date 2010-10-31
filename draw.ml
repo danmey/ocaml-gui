@@ -117,22 +117,29 @@ end
 
 open BatInt
 
-let setup_text () =
-  let w,h = Display.display_size in
-  let ratio = float w /. float h in
-  GlDraw.viewport ~x:0 ~y:0 ~w:w ~h:h;
-  GlMat.push ();
+let render_bitmap_string x y font string =
   GlMat.mode `projection;
+  GlMat.push ();
   GlMat.load_identity ();
-  GluMat.perspective ~fovy:45. ~aspect:ratio ~z:(0.1, 1000.0);
+  let w,h = Display.display_size in
+  let right, top = float w, float h in
+  GluMat.ortho2d ~x:(0., right) ~y:(0.,top);
   GlMat.mode `modelview;
+  GlMat.push ();
   GlMat.load_identity ();
-  GluMat.look_at ~eye:(0.0, 0., 0.1) ~center:(0.0, 0.0, 0.0) ~up:(0., 1., 0.)
-
-let render_bitmap_string x y z font string =
-  GlPix.raster_pos ~x ~y ~z ();
+  GlMat.scale ~x:1. ~y:(-1.) ~z:1.;
+  GlMat.translate ~x:0. ~y:(-.top) ~z:0.;
+  GlPix.raster_pos ~x ~y:(top-.y-.10.) ~z:0. ();
   for i = 0 to String.length string - 1 do
-    Glut.strokeCharacter ~font ~c:(int_of_char (string.[i]))
-  done
+    Glut.bitmapCharacter ~font ~c:(int_of_char (string.[i]))
+  done;
+  GlMat.pop ();
+  GlMat.mode `projection;
+  GlMat.pop ();
+  GlMat.mode `modelview
+  
+let draw_text x y text =
+  render_bitmap_string (float x) (float y) Glut.BITMAP_8_BY_13 text
 
-
+let text_width str = 
+  Glut.bitmapLength ~font:Glut.BITMAP_8_BY_13 ~str

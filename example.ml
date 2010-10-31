@@ -8,9 +8,9 @@ let _ =
       let w2 = new composite in
       let split = ((new splitter w1 w2 Horizontal) :> graphical) in
       g#add split;
-      for i = 1 to 1 do
-        let block = (new block :> graphical) in
-        block#invalidate (Rect.rect (i*80,10) (70,30));
+      for i = 0 to 1 do
+        let block = (new button :> graphical) in
+        block#invalidate (Rect.rect (i*60+10,10) (50,30));
         w2#add block
       done;
       g#invalidate (Rect.rect (50,50) (400,400));

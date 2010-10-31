@@ -37,13 +37,20 @@ let run_events from_window event =
               (if Rect.is_in (Window.abs_pos window) p 
                then (focused_window := Some window; callback from_window (pre_process_event window event)) else consumed)
             | MouseUp p ->
+              (match !focused_window with
+                | None -> consumed
+                | Some window' -> if window == window' then
+                    callback from_window (pre_process_event window event) 
+                  else consumed);
               (if Rect.is_in (Window.abs_pos window) p
                then (focused_window := None; callback from_window (pre_process_event window event))
                else consumed)
           | MouseMotion _-> 
             (match !focused_window with
               | None -> consumed
-              | Some window' -> if window == window' then callback from_window (pre_process_event window event) else consumed)
+              | Some window' -> if window == window' then
+                  callback from_window (pre_process_event window event) 
+                else consumed)
           | _ -> callback from_window event
        else consumed) signals false)
 

@@ -184,7 +184,7 @@ void processNormalKeys(unsigned char key, int x, int y) {
 value render_some_text (value unit)
 {
   CAMLparam1(unit);
-  changeSize (1680, 1030);
-  renderScene();//  renderBitmapCharacher(0,1.8,0,(void *)font,"3D Tech");
+  // changeSize (1680, 1030);
+  // renderScene();//  renderBitmapCharacher(0,1.8,0,(void *)font,"3D Tech");
   CAMLreturn (Val_unit);   
 }

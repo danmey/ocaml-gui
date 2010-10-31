@@ -54,8 +54,10 @@ let with_view f =
     GlMat.ortho ~x:(0.,float w) ~y:(float h,0.0) ~z:(0.0,1.);
 
     let res = f() in
-      GlMat.pop();
-      res
+    GlMat.mode `projection;
+    GlMat.pop();
+    GlMat.mode `modelview;
+    res
 
 (* let draw_lst lst =  *)
 (*   List.iter (fun x ->  *)
@@ -384,7 +386,7 @@ let display () =
   with_view (fun () -> Window.draw_desktop ());
   let w,h = Display. display_size in
  
-  with_view (fun () -> render_bitmap_string 0.0 0.0 0.0 Glut.STROKE_MONO_ROMAN "ala ma kota");
+  with_view (fun () -> render_bitmap_string 40.0 50.0 Glut.BITMAP_8_BY_13 "ala ma kota");
   (* with_view draw_quad; *)
    Glut.swapBuffers ();
   ignore(Unix.select [] [] [] 0.001)
