@@ -52,6 +52,7 @@ let with_view f =
   let w,h = Display. display_size in
     GlDraw.viewport ~x:0 ~y:0 ~w:w ~h:h;
     GlMat.ortho ~x:(0.,float w) ~y:(float h,0.0) ~z:(0.0,1.);
+
     let res = f() in
       GlMat.pop();
       res
@@ -366,10 +367,11 @@ open BatFloat
 (*    GlDraw.ends (); *)
    
 (*    () *)
+external render_some : unit -> unit = "render_some_text"
 
 let display () =
   Gl.disable `scissor_test;
-  GlClear.color (0.0,0.0,0.0);
+  GlClear.color (0.0,0.0,1.0);
   GlClear.clear [ `color; `depth];
   GluMat.perspective ~fovy:60. ~aspect:1.6 ~z:(0.1,100.0);
   Gl.disable `depth_test ;
@@ -380,6 +382,9 @@ let display () =
   GlMat.load_identity ();
   (* with_view (fun() -> draw_lst **> draw layout#on_draw); *)
   with_view (fun () -> Window.draw_desktop ());
+  let w,h = Display. display_size in
+ 
+  with_view (fun () -> render_bitmap_string 0.0 0.0 0.0 Glut.STROKE_MONO_ROMAN "ala ma kota");
   (* with_view draw_quad; *)
    Glut.swapBuffers ();
   ignore(Unix.select [] [] [] 0.001)

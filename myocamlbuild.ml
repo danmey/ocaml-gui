@@ -185,7 +185,7 @@ end
 (* ocaml_lib ~extern:true "llvm_scalar_opts";; *)
 
 flag ["link"; "ocaml"; "gcc"] (S[A"-g";A"-cc"; A"gcc -g"; A"-cclib"; A"-rdynamic"]);;
-dep ["link"; "ocaml"; "use_util"] ["src/util.o"];;
+dep ["link"; "ocaml"; "use_util"] ["util.o"];;
 (* flag ["compile"; "ocaml";] (S[A "-I"; A "+/prog/worx/ocaml/"]);; *)
 (* flag ["compile"; "ocaml";] (S[A"-syntax";  A "monad"]);; *)
 

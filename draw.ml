@@ -115,5 +115,24 @@ let draw el =
     GlArray.draw_arrays `quads ~first:0 ~count:((Raw.length vertices)/2);
 end
 
+open BatInt
 
-;;
+let setup_text () =
+  let w,h = Display.display_size in
+  let ratio = float w /. float h in
+  GlDraw.viewport ~x:0 ~y:0 ~w:w ~h:h;
+  GlMat.push ();
+  GlMat.mode `projection;
+  GlMat.load_identity ();
+  GluMat.perspective ~fovy:45. ~aspect:ratio ~z:(0.1, 1000.0);
+  GlMat.mode `modelview;
+  GlMat.load_identity ();
+  GluMat.look_at ~eye:(0.0, 0., 0.1) ~center:(0.0, 0.0, 0.0) ~up:(0., 1., 0.)
+
+let render_bitmap_string x y z font string =
+  GlPix.raster_pos ~x ~y ~z ();
+  for i = 0 to String.length string - 1 do
+    Glut.strokeCharacter ~font ~c:(int_of_char (string.[i]))
+  done
+
+
