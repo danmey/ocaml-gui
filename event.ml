@@ -55,9 +55,10 @@ let run_events from_window event =
        else consumed) signals false)
 
 
-let mouse_handler ~button ~state ~x ~y = run_events Window.desktop
-  (match state with
-    | Glut.DOWN -> MouseDown (x, y)
-    | Glut.UP -> MouseUp (x, y))
+let mouse_handler ~button ~state ~x ~y = 
+  run_events Window.desktop
+    (match state with
+      | Glut.DOWN -> MouseDown (x, y)
+      | Glut.UP -> MouseUp (x, y))
 
 let mouse_motion_handler ~x ~y = run_events Window.desktop (MouseMotion (x,y))

@@ -47,21 +47,21 @@ let button_painter_pressed rect =
    (* (\* GlTex.coord2 (0., 1.); GlDraw.vertex ~x ~y:(y + h-1.) (); *\) *)
    (* GlDraw.ends (); *)
    GlDraw.begins `lines;
-   c 132 132 132;
-   GlDraw.vertex ~x:(x + w-2.) ~y:(y + 1.) ();
-   GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+   (* c 132 132 132; *)
+   (* GlDraw.vertex ~x:(x + w-2.) ~y:(y + 1.) (); *)
+   (* GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) (); *)
 
-   GlDraw.vertex ~x:(x+1.) ~y:(y + h - 2.) ();
-   GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+   (* GlDraw.vertex ~x:(x+1.) ~y:(y + h - 2.) (); *)
+   (* GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) (); *)
 
-   c 66 66 66;
+   c 255 255 255;
    GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
    GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
 
    GlDraw.vertex ~x:x ~y:(y + h-1.) ();
    GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
 
-   c 255 255 255;
+   c 132 132 132;
    GlDraw.vertex ~x:x ~y:y ();
    GlDraw.vertex ~x:(x + w-2.) ~y:y ();
 
@@ -100,7 +100,7 @@ class interactive = object ( self : 'self )
     | Event.MouseDown p -> window.painter <- button_painter_pressed; true
     | Event.MouseUp p -> window.painter <- button_painter_normal; true
     | _ -> false
-  
+
 end
 
 type drag_state = Dragged | Placed
@@ -127,7 +127,7 @@ class draggable = object ( self : 'self )
   method drag pos dpos =
     Rect.set_pos window.pos pos
   method drag_end = ()
-
+   
 end
 
 class composite = object ( self : 'self )
@@ -274,14 +274,13 @@ class button = object ( self : 'self )
   inherit interactive as super
   val mutable normal_caption = "Push me!"
   val mutable pushed_caption = "Pushed"
-  val skin = (Texture.Tga.gl_load "button-normal-panel.tga")
   initializer
-    window.painter <- caption_painter normal_caption skin
+    window.painter <- caption_painter normal_caption 0
   method event (wind : Window.window) (ev : Event.event) = 
     super#event wind ev;
     match ev with
-      | Event.MouseDown p -> window.painter <- caption_painter pushed_caption skin; true
-      | Event.MouseUp p -> window.painter <- caption_painter normal_caption skin; true
+      | Event.MouseDown p -> window.painter <- caption_painter pushed_caption 0; true
+      | Event.MouseUp p -> window.painter <- caption_painter normal_caption 0; true
       | _ -> false
 end
 
