@@ -55,7 +55,7 @@ end
 class composite = object ( self : 'self )
   inherit interactive as super
   val mutable widgets = []
-  method add (widget : graphical) = Window.add window (widget#window); widgets <- widget :: widgets
+  method add (widget : graphical) = Window.add window (widget#window); widgets <- widgets @ [widget]
 end
 
 class desktop =  object ( self : 'self )
@@ -224,6 +224,7 @@ class slider = object ( self : 'self )
   method drag_end =
     value <- value +. drag_value;
     drag_value <- 0.
+  method value = value
 end
 
 type layout = Rect.t -> Rect.t -> int -> int -> Rect.t
@@ -264,3 +265,20 @@ class frame layout = object ( self : 'self )
       w # invalidate local_rect) widgets
 end
 
+open BatFloat
+class graphics = object ( self : 'self )
+  inherit graphical
+  initializer
+    window.painter <- self#draw
+    method draw rect =
+      let x, y, w, h = center_rect rect in
+      GlDraw.begins `quads;
+      GlDraw.color (0.,0.,0.);
+      GlDraw.vertex ~x ~y ();
+      GlDraw.vertex ~x:(x + w) ~y ();
+      GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
+      GlDraw.vertex ~x ~y:(y + h) ();
+      GlDraw.ends ();
+      ()
+end
+    

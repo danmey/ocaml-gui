@@ -16,6 +16,7 @@ let center_rect = lift22 center_coord float
 let default_painter rect =
    let x, y, w, h = center_rect rect in
    GlDraw.begins `line_loop;
+   GlDraw.color (1.,1.,1.);
    GlDraw.vertex ~x ~y ();
    GlDraw.vertex ~x:(x + w) ~y ();
    GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
