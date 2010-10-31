@@ -373,7 +373,7 @@ external render_some : unit -> unit = "render_some_text"
 
 let display () =
   Gl.disable `scissor_test;
-  GlClear.color (0.0,0.0,1.0);
+  GlClear.color (214./255., 214./.255., 206./.255.);
   GlClear.clear [ `color; `depth];
   GluMat.perspective ~fovy:60. ~aspect:1.6 ~z:(0.1,100.0);
   Gl.disable `depth_test ;

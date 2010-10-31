@@ -1,6 +1,76 @@
 open Window
 open Draw
 
+open BatFloat
+let button_painter_normal rect =
+  let c r g b = GlDraw.color (float r/.255., float g/.255., float b/.255.) in
+   let x, y, w, h = center_rect rect in
+   (* GlDraw.begins `quads; *)
+   (* c 214 214 206; *)
+   (* (\* GlTex.coord2 (0., 0.); GlDraw.vertex ~x ~y (); *\) *)
+   (* (\* GlTex.coord2 (1., 0.); GlDraw.vertex ~x:(x + w-1.) ~y (); *\) *)
+   (* (\* GlTex.coord2 (1., 1.); GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) (); *\) *)
+   (* (\* GlTex.coord2 (0., 1.); GlDraw.vertex ~x ~y:(y + h-1.) (); *\) *)
+   (* GlDraw.ends (); *)
+   GlDraw.begins `lines;
+   c 132 132 132;
+   GlDraw.vertex ~x:(x + w-2.) ~y:(y + 1.) ();
+   GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+
+   GlDraw.vertex ~x:(x+1.) ~y:(y + h - 2.) ();
+   GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+
+   c 66 66 66;
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+
+   GlDraw.vertex ~x:x ~y:(y + h-1.) ();
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+
+   c 255 255 255;
+   GlDraw.vertex ~x:x ~y:y ();
+   GlDraw.vertex ~x:(x + w-2.) ~y:y ();
+
+   GlDraw.vertex ~x:x ~y:y ();
+   GlDraw.vertex ~x:x ~y:(y+h-2.) ();
+
+   GlDraw.ends ()
+
+let button_painter_pressed rect =
+  let c r g b = GlDraw.color (float r/.255., float g/.255., float b/.255.) in
+   let x, y, w, h = center_rect rect in
+   (* GlDraw.begins `quads; *)
+   (* c 214 214 206; *)
+   (* (\* GlTex.coord2 (0., 0.); GlDraw.vertex ~x ~y (); *\) *)
+   (* (\* GlTex.coord2 (1., 0.); GlDraw.vertex ~x:(x + w-1.) ~y (); *\) *)
+   (* (\* GlTex.coord2 (1., 1.); GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) (); *\) *)
+   (* (\* GlTex.coord2 (0., 1.); GlDraw.vertex ~x ~y:(y + h-1.) (); *\) *)
+   (* GlDraw.ends (); *)
+   GlDraw.begins `lines;
+   c 132 132 132;
+   GlDraw.vertex ~x:(x + w-2.) ~y:(y + 1.) ();
+   GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+
+   GlDraw.vertex ~x:(x+1.) ~y:(y + h - 2.) ();
+   GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+
+   c 66 66 66;
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+
+   GlDraw.vertex ~x:x ~y:(y + h-1.) ();
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+
+   c 255 255 255;
+   GlDraw.vertex ~x:x ~y:y ();
+   GlDraw.vertex ~x:(x + w-2.) ~y:y ();
+
+   GlDraw.vertex ~x:x ~y:y ();
+   GlDraw.vertex ~x:x ~y:(y+h-2.) ();
+
+   GlDraw.ends ()
+
+open BatInt
 
 class graphical = object ( self : 'self )
   val window : window = (empty_window ())
@@ -22,9 +92,15 @@ let quad_painter rect =
 class interactive = object ( self : 'self )
   inherit graphical as super
   method event (window : Window.window) (ev : Event.event) = false
-  initializer 
+  initializer
+    window.painter <- button_painter_normal;
     Event.register window
       (fun window ev -> self#event window ev)
+  method event wind = function
+    | Event.MouseDown p -> window.painter <- button_painter_pressed; true
+    | Event.MouseUp p -> window.painter <- button_painter_normal; true
+    | _ -> false
+  
 end
 
 type drag_state = Dragged | Placed
@@ -33,7 +109,9 @@ class draggable = object ( self : 'self )
   inherit interactive as super
   val mutable state = Placed
   val mutable dragged_pos = (0,0)
-  method event wind = function
+  method event wind ev =
+    super#event wind ev;
+    match ev with
     | Event.MouseDown p -> state <- Dragged; dragged_pos <- p; true
     | Event.MouseUp p -> state <- Placed; self#drag_end; true
     | Event.MouseMotion p -> 
@@ -91,6 +169,7 @@ class splitter first second constr1 = object ( self : 'self )
 
   (* VERY CRUFTY CODE, needs to tide up this! *)
   method event (window : Window.window) (ev : Event.event) = 
+    super#event window ev;
     match ev with
       | Event.Drag (dx, dy) when split_widget#window == window ->
         (match constr with
@@ -167,6 +246,7 @@ class block = object ( self : 'self )
     ()
 
   method event (wind : Window.window) (ev : Event.event) = 
+    super#event wind ev;
     match ev with
       | Event.Drag dpos when bar_widget#window == wind ->
         print_endline "drag2";
@@ -181,14 +261,9 @@ class block = object ( self : 'self )
 end
 
 open BatFloat
-let caption_painter text rect =
+let caption_painter text _ rect =
    let x, y, w, h = center_rect rect in
-   GlDraw.begins `line_loop;
-   GlDraw.vertex ~x ~y ();
-   GlDraw.vertex ~x:(x + w) ~y ();
-   GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
-   GlDraw.vertex ~x ~y:(y + h) ();
-   GlDraw.ends ();
+   button_painter_normal rect;
    let len = float (text_width text) in
    let ofs_x = (w - len) / 2. + x in
    let ofs_y = (h - 10.) / 2. + y in
@@ -199,13 +274,14 @@ class button = object ( self : 'self )
   inherit interactive as super
   val mutable normal_caption = "Push me!"
   val mutable pushed_caption = "Pushed"
+  val skin = (Texture.Tga.gl_load "button-normal-panel.tga")
   initializer
-    window.painter <- caption_painter normal_caption
-
+    window.painter <- caption_painter normal_caption skin
   method event (wind : Window.window) (ev : Event.event) = 
+    super#event wind ev;
     match ev with
-      | Event.MouseDown p -> window.painter <- caption_painter pushed_caption; true
-      | Event.MouseUp p -> window.painter <- caption_painter normal_caption; true
+      | Event.MouseDown p -> window.painter <- caption_painter pushed_caption skin; true
+      | Event.MouseUp p -> window.painter <- caption_painter normal_caption skin; true
       | _ -> false
 end
 
@@ -216,7 +292,7 @@ class slider = object ( self : 'self )
   val mutable step = 0.01
   val mutable drag_value = 0.0
   initializer
-    window.painter <- (fun rect -> caption_painter (Printf.sprintf "%2.2f" (drag_value +. value)) rect)
+    window.painter <- (fun rect -> caption_painter (Printf.sprintf "%2.2f" (drag_value +. value)) 0 rect)
 
   method drag _ (dx,_) =
     drag_value <- step *. (float dx);
