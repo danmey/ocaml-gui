@@ -130,8 +130,7 @@ class draggable = object ( self : 'self )
 
   method mouse_motion point =
       let window_pos = Rect.pos window.pos in
-      let new_window_pos = 
-        Pos.sub (Pos.add window_pos point) dragged_pos in
+      let new_window_pos = Pos.sub (Pos.add window_pos point) dragged_pos in
       let dpos = Pos.sub new_window_pos window_pos in
       self#drag new_window_pos dpos;
       let w,h = Rect.size window.pos in
@@ -188,11 +187,11 @@ class splitter first second constr1 = object ( self : 'self )
       | Event.Drag (dx, dy) when split_widget#window == window ->
         (match constr with
           | Horizontal ->
-            let w1,h = Rect.size first#window.pos in
-            let w2,_ = Rect.size second#window.pos in
-            let x2,_ = Rect.pos second#window.pos in
-            first#invalidate (Rect.rect (0,0) (w1+dx,h));
-            second#invalidate (Rect.rect (x2+dx,0) (w2-dx,h));
+            let w,h = Rect.size first#window.pos in
+            let s,_ = Rect.size second#window.pos in
+            let p,_ = Rect.pos second#window.pos in
+            first#invalidate (Rect.rect (0,0) (w+dx,h));
+            second#invalidate (Rect.rect (p+dx,0) (s-dx,h));
             true
           | Vertical ->
             let w,h1 = Rect.size first#window.pos in
