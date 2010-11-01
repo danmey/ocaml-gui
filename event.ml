@@ -32,33 +32,35 @@ let run_events from_window event =
   ignore(Hashtbl.fold
     (fun window { callback } consumed ->
       if not consumed then
-          match event with
-            | MouseDown p ->
+        match event with
+          | MouseDown p ->
               (if Rect.is_in (Window.abs_pos window) p 
-               then (focused_window := Some window; callback from_window (pre_process_event window event)) else consumed)
+               then (focused_window := Some (window, from_window, callback) ; callback from_window (pre_process_event window event)) else consumed)
             | MouseUp p ->
-              (match !focused_window with
-                | None -> consumed
-                | Some window' -> if window == window' then
-                    callback from_window (pre_process_event window event) 
-                  else consumed);
               (if Rect.is_in (Window.abs_pos window) p
-               then (focused_window := None; callback from_window (pre_process_event window event))
+               then (callback from_window (pre_process_event window event))
                else consumed)
           | MouseMotion _-> 
             (match !focused_window with
               | None -> consumed
-              | Some window' -> if window == window' then
-                  callback from_window (pre_process_event window event) 
-                else consumed)
+              | Some (window', from_window, callback) -> 
+                if window == window' then callback from_window (pre_process_event window event) else consumed)
           | _ -> callback from_window event
-       else consumed) signals false)
+       else consumed) signals false);
+  match event with
+    | MouseUp p ->
+      (match !focused_window with
+        | None -> ()
+        | Some (window, from_window, callback) -> 
+          callback from_window (pre_process_event window event); ())
+    | _ -> ()
+  
 
 
-let mouse_handler ~button ~state ~x ~y = 
-  run_events Window.desktop
-    (match state with
-      | Glut.DOWN -> MouseDown (x, y)
-      | Glut.UP -> MouseUp (x, y))
+
+let mouse_handler ~button ~state ~x ~y = run_events Window.desktop
+  (match state with
+    | Glut.DOWN -> MouseDown (x, y)
+    | Glut.UP -> MouseUp (x, y))
 
 let mouse_motion_handler ~x ~y = run_events Window.desktop (MouseMotion (x,y))

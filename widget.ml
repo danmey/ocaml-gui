@@ -169,7 +169,6 @@ class splitter first second constr1 = object ( self : 'self )
 
   (* VERY CRUFTY CODE, needs to tide up this! *)
   method event (window : Window.window) (ev : Event.event) = 
-    super#event window ev;
     match ev with
       | Event.Drag (dx, dy) when split_widget#window == window ->
         (match constr with
