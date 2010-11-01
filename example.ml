@@ -59,7 +59,7 @@ let _ =
     (fun () ->
       let g = new desktop in
       let control_pane = new frame (fixed_vertical_layout 5 25) in
-      let edit_pane = new button in
+      let edit_pane = new tree in
       let split_control = ((new splitter control_pane edit_pane Vertical) :> graphical) in
       let sx = (new slider) in
       let sy = (new slider) in

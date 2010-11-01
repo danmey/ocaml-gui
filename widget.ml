@@ -194,11 +194,11 @@ class splitter first second constr1 = object ( self : 'self )
             second#invalidate (Rect.rect (p+dx,0) (s-dx,h));
             true
           | Vertical ->
-            let w,h1 = Rect.size first#window.pos in
-            let _,h2 = Rect.size second#window.pos in
-            let _,y2 = Rect.pos second#window.pos in
-            first#invalidate (Rect.rect (0,0) (w, h1+dy));
-            second#invalidate (Rect.rect (0, y2+dy) (w,h2-dy));
+            let w,h = Rect.size first#window.pos in
+            let _,s = Rect.size second#window.pos in
+            let _,p = Rect.pos second#window.pos in
+            first#invalidate (Rect.rect (0,0) (w, h+dy));
+            second#invalidate (Rect.rect (0, p+dy) (w, s-dy));
             true)
       | _ -> false
         
@@ -206,43 +206,37 @@ class splitter first second constr1 = object ( self : 'self )
         (match constr with
           | Horizontal ->
             super#invalidate rect;
-            let x,y = Rect.pos window.pos in
-            let w,h = Rect.size window.pos in
-            let half = split_widget#window.pos.Rect.x + 10 in
-            let xs = half - 10 in
-            split_widget#invalidate (Rect.rect (xs,0) (20,h));
-            first#invalidate (Rect.rect (0,0) (xs,h));
-            second#invalidate (Rect.rect (xs,0) (w,h-xs))
+            let w,h = Rect.size self#window.pos in
+            let o,_ = Rect.pos split_widget#window.pos in
+            split_widget#invalidate (Rect.rect (o,0) (20,h));
+            first#invalidate (Rect.rect (0,0) (o,h));
+            second#invalidate (Rect.rect (o,0) (w,h-o))
           | Vertical ->
             super#invalidate rect;
-            let x,y = Rect.pos window.pos in
-            let w,h = Rect.size window.pos in
-            let half = split_widget#window.pos.Rect.y + 10 in
-            let ofs = half - 10 in
-            split_widget#invalidate (Rect.rect (0,ofs) (w, 20));
-            first#invalidate (Rect.rect (0,0) (w, ofs));
-            second#invalidate (Rect.rect (0, ofs+20) (w,h-ofs-20)))
+            let w,h = Rect.size self#window.pos in
+            let _,o = Rect.pos split_widget#window.pos in
+            split_widget#invalidate (Rect.rect (0,o) (w, 20));
+            first#invalidate (Rect.rect (0,0) (w, o));
+            second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
 
   method invalidate_before_init rect = 
         (match constr with
           | Horizontal ->
             super#invalidate rect;
-            let x,y = Rect.pos window.pos in
+            let p,_ = Rect.pos window.pos in
             let w,h = Rect.size window.pos in
-            let half = x+w/2 in
-            let xs = half - 10 in
-            split_widget#invalidate (Rect.rect (xs,0) (20,h));
-            first#invalidate (Rect.rect (0,0) (xs,h));
-            second#invalidate (Rect.rect (xs,0) (w,h))
+            let o = p + w / 2 - 10 in
+            split_widget#invalidate (Rect.rect (o,0) (20,h));
+            first#invalidate (Rect.rect (0,0) (o,h));
+            second#invalidate (Rect.rect (o,0) (w,h))
           | Vertical ->
             super#invalidate rect;
-            let x,y = Rect.pos window.pos in
+            let _,p = Rect.pos window.pos in
             let w,h = Rect.size window.pos in
-            let half = x+h/2 in
-            let ofs = half - 10 in
-            split_widget#invalidate (Rect.rect (0,ofs) (w, 20));
-            first#invalidate (Rect.rect (0,0) (w, ofs));
-            second#invalidate (Rect.rect (0, ofs+20) (w,h-ofs-20)))
+            let o = p + h / 2 - 10 in
+            split_widget#invalidate (Rect.rect (0,o) (w, 20));
+            first#invalidate (Rect.rect (0,0) (w, o));
+            second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
 
   method invalidate rect =
     (if not formed then self#invalidate_before_init else self#invalidate_after_init) rect;
@@ -273,7 +267,47 @@ class block = object ( self : 'self )
     bar_widget#invalidate (Rect.rect (0,0) (w,20))
 end
 
+type 'a element_tree = Node of string * 'a * 'a element_tree list
+
+
 open BatFloat
+
+class [ 'a ] tree =
+  let sample_tree =
+      [Node ("tool1", 1, [
+        Node ("tool11", 1,[]);
+        Node ("tool12", 1,[])
+        ]);
+       Node ("tool2", 2, []);
+       Node ("tool3", 3, [])] 
+  in
+object ( self : 'self )
+  inherit composite as super
+  method paint state rect =
+    let rec loop ident i = function
+      | Node (text, id, children) :: xs ->
+        let w,_ = Rect.size self#window.pos in
+        let x, y, w, h = 
+          center_rect (BatInt.(Rect.place_in 
+                                 (Rect.rect (0,i*15) (w,13)) 
+                                 self#window.pos)) in
+        let len = float (text_width text) in
+        let ofs_x = (w -. len) /. 2. + x in
+        let ofs_x = float ident*30. + x+15. in
+        let ofs_y = (h -. 10.) /. 2. + y in
+        let ofs_y = y+15. in
+        draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
+        print_endline "tree";
+        loop BatInt.(ident+1) BatInt.(i+1) children;
+        loop ident BatInt.(i+1+List.length children) xs
+      | [] -> ()
+    in
+    loop 0 0 sample_tree
+  method mouse_down point =
+    
+end
+open BatFloat
+
 let caption_painter text _ state rect =
    let x, y, w, h = center_rect rect in
    button_painter state rect;
@@ -366,4 +400,3 @@ class graphics = object ( self : 'self )
       GlDraw.ends ();
       ()
 end
-    
