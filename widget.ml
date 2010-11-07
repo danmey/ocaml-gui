@@ -72,8 +72,9 @@ let button_painter state rect =
 
 open BatInt
 
-class widget = object
+class widget = object ( self : 'self )
   val window : window = (empty_window ())
+  method window = window
 end
 
 class graphical = object ( self : 'self )
@@ -81,7 +82,6 @@ class graphical = object ( self : 'self )
   val mutable state = Normal
   initializer window.painter <- (fun rect -> self#paint state rect)
   method invalidate rect = window.pos <- rect
-  method window = window
   method paint = button_painter
 end
 
@@ -124,8 +124,8 @@ class draggable = object ( self : 'self )
     true
       
   method mouse_up _ = 
-    state <- Normal; 
-    self#drag_end; 
+    (if self#drag_end then
+      state <- Normal);
     true
 
   method mouse_motion point =
@@ -139,19 +139,20 @@ class draggable = object ( self : 'self )
 
   method drag pos dpos = Rect.set_pos window.pos pos
 
-  method drag_end = ()
+  method drag_end = true
 end
 
-class composite = object ( self : 'self )
+class [ 'a ] composite = object ( self : 'self )
   inherit interactive as super
-  val mutable widgets = []
-  method add (widget : graphical) = 
+  val mutable widgets : 'a list = []
+  method add (widget : 'a) = 
     Window.add window (widget#window); 
     widgets <- widgets @ [widget]
+  method iter f = List.iter f widgets
 end
 
 class desktop =  object ( self : 'self )
-  inherit composite as super
+  inherit [ graphical ] composite as super
   initializer 
     ignore(Window.add Window.desktop window); ()
 end
@@ -169,7 +170,7 @@ end
 
 open BatInt
 class splitter first second constr1 = object ( self : 'self )
-  inherit composite as super
+  inherit [ graphical ] composite as super
   val mutable constr = constr1
   val split_widget = new draggable_constrained constr1
   val first = first
@@ -244,28 +245,6 @@ class splitter first second constr1 = object ( self : 'self )
       
 end
 
-class block = object ( self : 'self )
-  inherit composite as super
-  val bar_widget = new draggable
-    
-  initializer
-    self#add (bar_widget :> graphical);
-    ()
-
-  method event (wind : Window.window) (ev : Event.event) = 
-    super#event wind ev;
-    match ev with
-      | Event.Drag dpos when bar_widget#window == wind ->
-        print_endline "drag2";
-        self#invalidate (Rect.by window.pos dpos); true
-      | _ -> false
-
-  method invalidate rect = 
-    super#invalidate rect;
-    let x,y = Rect.pos rect in
-    let w,h = Rect.size rect in
-    bar_widget#invalidate (Rect.rect (0,0) (w,20))
-end
 
 type 'a element_tree = Node of string * 'a * 'a element_tree list
 
@@ -282,7 +261,7 @@ class [ 'a ] tree =
        Node ("tool3", 3, [])] 
   in
 object ( self : 'self )
-  inherit composite as super
+  inherit [ graphical ] composite as super
   method paint state rect =
     let rec loop ident i = function
       | Node (text, id, children) :: xs ->
@@ -297,13 +276,11 @@ object ( self : 'self )
         let ofs_y = (h -. 10.) /. 2. + y in
         let ofs_y = y+15. in
         draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
-        print_endline "tree";
         loop BatInt.(ident+1) BatInt.(i+1) children;
         loop ident BatInt.(i+1+List.length children) xs
       | [] -> ()
     in
     loop 0 0 sample_tree
-  method mouse_down point =
     
 end
 open BatFloat
@@ -342,7 +319,8 @@ class slider = object ( self : 'self )
     
   method drag_end =
     value <- value +. drag_value;
-    drag_value <- 0.
+    drag_value <- 0.;
+    true
   method value = value
 end
 
@@ -374,7 +352,7 @@ let fixed_horizontal_layout spacing width parent_rect d c i =
     Rect.rect (ofs, spacing) (width, h-spacing*2)
 
 class frame layout = object ( self : 'self )
-  inherit composite as super
+  inherit [ graphical ] composite as super
     
   method invalidate rect =
     super#invalidate rect;

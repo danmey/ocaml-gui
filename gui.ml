@@ -405,7 +405,7 @@ let on_mouse  ~button ~state ~x ~y =
 
 let init build =
   ignore( Glut.init Sys.argv );
-  Glut.initDisplayMode ~double_buffer:true ();
+  Glut.initDisplayMode ~double_buffer:true ~depth:true ();
   ignore (Glut.createWindow ~title:"OpenGL Demo");
   build ();
   Window.shelf (Rect.rect (0,0) Display.display_size);

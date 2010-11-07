@@ -1,6 +1,7 @@
 open Widget
 open Window
 open Draw
+open Blocks
 
 let id a = a
 let center_rect = Rect.lift4 id
@@ -65,7 +66,15 @@ let _ =
       let sy = (new slider) in
       let sz = (new slider) in
       let sw = (new slider) in
-      let graphical_pane = new sphere_view sx sy sz sw in
+      (* let graphical_pane = new sphere_view sx sy sz sw in *)
+      let graphical_pane = new block_canvas in
+      let b = (new block) in
+      graphical_pane#add b;
+      b#invalidate (Rect.rect (200,200) (80,20));
+      let b = (new block) in
+      graphical_pane#add b;
+      b#invalidate (Rect.rect (300,200) (80,20));
+    
       control_pane#add (sx :> graphical);
       control_pane#add (sy :> graphical);
       control_pane#add (sz :> graphical);
