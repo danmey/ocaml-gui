@@ -74,6 +74,9 @@ let _ =
       let b = (new block) in
       graphical_pane#add b;
       b#invalidate (Rect.rect (300,200) (80,20));
+      let b = (new block) in
+      graphical_pane#add b;
+      b#invalidate (Rect.rect (400,200) (80,20));
     
       control_pane#add (sx :> graphical);
       control_pane#add (sy :> graphical);
