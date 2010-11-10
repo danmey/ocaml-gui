@@ -10,9 +10,9 @@ type event =
 
 type signal = { callback : (Window.window -> event -> bool); }
 
-let signals : (Window.window, signal) Hashtbl.t = Hashtbl.create 100
+let signals : (Window.window * signal) list ref = ref []
 
-let register window signal = Hashtbl.add signals window { callback = signal }
+let register window signal = signals :=  (window, { callback = signal }) :: !signals
 
 let pre_process_event window = 
   let last_motion_pos = ref None in
@@ -29,8 +29,8 @@ let pre_process_event window =
 
 let focused_window = ref None
 let run_events from_window event =
-  ignore(Hashtbl.fold
-    (fun window { callback } consumed ->
+  ignore(List.fold_right
+    (fun (window, { callback }) consumed ->
       if not consumed then
         match event with
           | MouseDown p ->
@@ -46,7 +46,7 @@ let run_events from_window event =
               | Some (window', from_window, callback) -> 
                 if window == window' then callback from_window (pre_process_event window event) else consumed)
           | _ -> callback from_window event
-       else consumed) signals false);
+       else consumed) !signals false);
   match event with
     | MouseUp p ->
       (match !focused_window with

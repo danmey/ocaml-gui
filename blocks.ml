@@ -86,7 +86,6 @@ end and block = object ( self : 'self )
     right_border#invalidate right_border_rect;
     composite#invalidate rect
 
-
   (* method event (window : Window.window) (ev : Event.event) = *)
   (*   match ev with *)
   (*     | Event.Drag (dx, dy) when split_widget#window == window -> *)
