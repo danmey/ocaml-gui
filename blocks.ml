@@ -75,8 +75,8 @@ end and block = object ( self : 'self )
   val mutable accum_pos_y = 0
   method set_canvas c = canvas <- Some c
   method drag pos dpos =
-    window.pos.Rect.x <- fst pos / 20 * 20;
-    window.pos.Rect.y <- snd pos / 20 * 20;
+    window.pos.Rect.x <- ( fst pos + 5 ) / 20 * 20;
+    window.pos.Rect.y <- ( snd pos + 5 ) / 20 * 20;
     BatOption.may (fun x -> x#layout) canvas
   method invalidate rect =
     super#invalidate rect;
