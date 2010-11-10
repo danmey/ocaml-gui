@@ -62,7 +62,14 @@ class block_canvas = object ( self : 'self )
   (*         | y :: ys ->  *)
 
 end and block = object ( self : 'self )
-  inherit draggable
+  inherit [ draggable ] composite as composite
+  inherit draggable as super
+  val left_border = new draggable
+  val right_border = new draggable
+  initializer
+    composite#add left_border;
+    composite#add right_border;
+    
   (* val mutable canvas : block composite option = None *)
   val mutable canvas : block_canvas option = None
   val mutable accum_pos_y = 0
@@ -71,4 +78,17 @@ end and block = object ( self : 'self )
     window.pos.Rect.x <- fst pos / 20 * 20;
     window.pos.Rect.y <- snd pos / 20 * 20;
     BatOption.may (fun x -> x#layout) canvas
+  method invalidate rect =
+    super#invalidate rect;
+    let left_border_rect = Rect.rect (0,0) (10, rect.Rect.h) in
+    let right_border_rect = Rect.rect (rect.Rect.w-10, 0) (10, rect.Rect.h) in
+    left_border#invalidate left_border_rect;
+    right_border#invalidate right_border_rect;
+    composite#invalidate rect
+
+
+  (* method event (window : Window.window) (ev : Event.event) = *)
+  (*   match ev with *)
+  (*     | Event.Drag (dx, dy) when split_widget#window == window -> *)
+        
 end

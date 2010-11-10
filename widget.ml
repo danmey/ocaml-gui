@@ -142,7 +142,7 @@ class draggable = object ( self : 'self )
   method drag_end = true
 end
 
-class [ 'a ] composite = object ( self : 'self )
+class virtual [ 'a ] composite = object ( self : 'self )
   inherit interactive as super
   val mutable widgets : 'a list = []
   method add (widget : 'a) = 
