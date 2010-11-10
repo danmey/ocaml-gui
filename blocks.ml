@@ -19,8 +19,23 @@ class block_canvas = object ( self : 'self )
   method layout =
     let rects = List.map (fun w -> w # window.pos) widgets in
     let sorted = BatList.sort ~cmp:block_cmp rects in
+    let rec stack_loop acc cur_y = function
+      | x :: xs when x.Rect.y = cur_y -> 
+        (match acc with 
+          | [] -> stack_loop ([x] :: acc) cur_y xs
+          | a :: b -> stack_loop ((a @ [x]) :: acc) cur_y xs)
+      | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs
+      | [] -> acc in
+    
+    let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in
+    
+    let rec loop = function
+      | x :: xs -> String.concat "tab: \t" (List.map Rect.string_of_rect x) :: (loop xs)
+      | [] -> []
+    in
+    print_endline (String.concat "\n" (loop stack));
     print_endline "";
-    print_endline (String.concat "\n" (List.map Rect.string_of_rect sorted));
+    (* print_endline (String.concat "\n" (List.map Rect.string_of_rect sorted)); *)
     let rec loop = function
       | x :: y :: xs when 
           (x.Rect.x >= y.Rect.x && x.Rect.x <= y.Rect.x + y.Rect.w
@@ -30,14 +45,15 @@ class block_canvas = object ( self : 'self )
       | _ -> []
     in
     let s = loop sorted in
-    print_endline (String.concat "\n" 
-                     (List.map 
-                        (function 
-                          | (TopBottom, (x,y)) -> 
-                          Printf.sprintf "TopBottom (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y)
-                         | (LeftRight, (x,y)) -> 
-                          Printf.sprintf "LeftRight (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y)
-                        ) s))
+    (* print_endline (String.concat "\n"  *)
+    (*                  (List.map  *)
+    (*                     (function  *)
+    (*                       | (TopBottom, (x,y)) ->  *)
+    (*                       Printf.sprintf "TopBottom (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y) *)
+    (*                      | (LeftRight, (x,y)) ->  *)
+    (*                       Printf.sprintf "LeftRight (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y) *)
+    (*                     ) s)); *)
+    ()
     
       
   (*   let loop = function *)
