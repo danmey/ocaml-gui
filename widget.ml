@@ -157,8 +157,9 @@ class desktop =  object ( self : 'self )
     ignore(Window.add Window.desktop window); ()
 end
 
-type constr = Horizontal | Vertical
+type constr = Horizontal | Vertical | HorizontalWith of int
 
+open BatInt
 class draggable_constrained constr = object ( self : 'self )
   inherit draggable
   val mutable constr = constr
@@ -166,9 +167,9 @@ class draggable_constrained constr = object ( self : 'self )
     match constr with 
       | Horizontal -> window.pos.Rect.x <- fst pos
       | Vertical -> window.pos.Rect.y <- snd pos
+      | HorizontalWith amount -> window.pos.Rect.x <- ( fst pos + amount / 2 ) / amount * amount;
 end
 
-open BatInt
 class splitter first second constr1 = object ( self : 'self )
   inherit [ graphical ] composite as super
   val mutable constr = constr1

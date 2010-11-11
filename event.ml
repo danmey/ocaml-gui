@@ -54,9 +54,42 @@ let run_events from_window event =
         | Some (window, from_window, callback) -> 
           callback from_window (pre_process_event window event); ())
     | _ -> ()
-  
 
-
+let run_events from_window event =
+  match event with
+    | MouseMotion p
+    | MouseUp p
+    | MouseDown p -> BatOption.map
+      (fun windows ->
+        let rec event_loop = function
+          | window :: rest_windows -> 
+            (try 
+               let { callback } = List.assoc window !signals in
+               (match event with
+                 | MouseUp _ ->
+                   BatOption.map 
+                     (fun (window', from_window, callback) ->
+                       if window == window' then
+                         if callback from_window (pre_process_event window event) then
+                           focused_window := None
+                         else event_loop rest_windows)
+                     !focused_window; ()
+                 | MouseMotion _ ->
+                   BatOption.map 
+                     (fun (window', from_window, callback) ->
+                       if window == window' then
+                         if not (callback from_window (pre_process_event window event)) then
+                         () (* event_loop rest_windows *))
+                     !focused_window; ()
+                 | MouseDown _ ->
+               if callback from_window (pre_process_event window event) then
+                 focused_window := Some (window, from_window, callback)
+               else event_loop rest_windows)
+             with _ -> event_loop rest_windows)
+          | [] -> ()
+        in
+        event_loop windows) (Window.find_window p Window.desktop); 
+      ()
 
 let mouse_handler ~button ~state ~x ~y = run_events Window.desktop
   (match state with

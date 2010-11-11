@@ -60,20 +60,6 @@ let rec draw_window window =
 
 let draw_desktop () = 
   draw_window desktop
-
-let find_window position window =
-  let rec find_loop = function
-    | [] -> None
-    | { pos; children } :: rest ->
-      (match children with
-        | [] -> 
-          if Rect.is_in pos position then 
-            Some window
-          else find_loop rest
-        | windows -> find_loop windows)
-  in
-  find_loop [window]
-
 let window_path window =
   let bool_of_option = function Some _ -> true | None -> false  in
   let rec find_loop path ({ children; } as window') =
@@ -91,15 +77,31 @@ let window_path window =
     | None -> failwith "window_path: window not found."
     | Some path -> List.rev path
 
-let add parent window =
-  parent.children <-  window :: parent.children;
-  window
-
 let abs_pos window =
   let path = window_path window in
   List.fold_left 
     (fun rect { pos } -> 
       Rect.place_in pos rect) desktop.pos path
+
+let find_window position window =
+  let rec loop window =
+    let rect = abs_pos window in
+    Printf.printf "window: %s -> %s\n" (Rect.string_of_rect window.pos)  (Rect.string_of_rect rect);
+    (if Rect.is_in rect position then
+        [window]
+     else 
+        [])
+    @ List.concat (List.map loop window.children) in
+  match List.rev (loop window) with
+    | [] -> None
+    | lst -> Some lst
+
+
+
+let add parent window =
+  parent.children <-  window :: parent.children;
+  window
+
 
 let relative_pos window_relative window =
   let window_relative_pos = abs_pos window_relative in

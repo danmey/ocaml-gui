@@ -1,4 +1,4 @@
-let panel_height = 20
+let panel_height = 0
 
 let system_with_out str =
   let o = BatUnix.open_process_in ~autoclose:true ~cleanup:true str in

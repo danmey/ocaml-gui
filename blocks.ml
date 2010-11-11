@@ -64,8 +64,8 @@ class block_canvas = object ( self : 'self )
 end and block = object ( self : 'self )
   inherit [ draggable ] composite as composite
   inherit draggable as super
-  val left_border = new draggable
-  val right_border = new draggable
+  val left_border = new draggable_constrained (HorizontalWith 10)
+  val right_border = new draggable_constrained (HorizontalWith 10)
   initializer
     composite#add left_border;
     composite#add right_border;
@@ -86,8 +86,17 @@ end and block = object ( self : 'self )
     right_border#invalidate right_border_rect;
     composite#invalidate rect
 
-  (* method event (window : Window.window) (ev : Event.event) = *)
-  (*   match ev with *)
-  (*     | Event.Drag (dx, dy) when split_widget#window == window -> *)
+  method event (window : Window.window) (ev : Event.event) =
+    (match ev with
+      | Event.Drag (dx, dy) when left_border#window == window ->
+        let rect = self#window.pos in
+        self#invalidate (Rect.rect (rect.Rect.x + dx, rect.Rect.y) (rect.Rect.w - dx, rect.Rect.h));
+        true
+      | Event.Drag (dx, dy) when right_border#window == window ->
+        let rect = self#window.pos in
+        self#invalidate (Rect.rect (rect.Rect.x, rect.Rect.y) (rect.Rect.w + dx, rect.Rect.h));
+        true
+      | _ -> false)   
+        
         
 end
