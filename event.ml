@@ -38,15 +38,12 @@ let run_events from_window event =
     | MouseDown (b, p) -> BatOption.may
       (fun windows ->
         (* let windows = List.rev windows in *)
-        Printf.printf "hit_window: %s\n" (Rect.string_of_rect (List.hd windows).Window.pos);
         let rec event_loop = function
           | window :: rest_windows -> 
             (try 
                let { callback } = List.assoc window !signals in
                if callback from_window (pre_process_event window event) then
-                 (Printf.printf "got_it: %s\n" (Rect.string_of_rect window.Window.pos);
-
-                 focused_window := Some (window, from_window, callback))
+                 focused_window := Some (window, from_window, callback)
                else event_loop rest_windows
              with _ -> event_loop rest_windows)
           | [] -> ()

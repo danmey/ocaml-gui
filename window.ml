@@ -82,14 +82,12 @@ let abs_pos window =
   let path = window_path window in
   List.fold_left 
     (fun rect { pos } ->
-      Printf.printf "abs_pos: %s\n" (Rect.string_of_rect rect);
       Rect.place_in pos rect) desktop.pos path
 
 let find_window position window =
   let rec loop window =
     let rect = abs_pos window in
     let x, y = position in
-    Printf.printf "window: %s -> %d %d\n" (Rect.string_of_rect rect) x y;
     (if Rect.is_in rect position then
         [window]
      else 

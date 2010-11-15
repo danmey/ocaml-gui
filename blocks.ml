@@ -51,15 +51,15 @@ class block_canvas = object ( self : 'self )
       | x :: xs -> loop xs
       | _ -> []
     in
-    let s = loop sorted in
-    print_endline (String.concat "\n"
-                     (List.map
-                        (function
-                          | (TopBottom, (x,y)) ->
-                          Printf.sprintf "TopBottom (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y)
-                         | (LeftRight, (x,y)) ->
-                          Printf.sprintf "LeftRight (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y)
-                        ) s));
+    (* let s = loop sorted in *)
+    (* print_endline (String.concat "\n" *)
+    (*                  (List.map *)
+    (*                     (function *)
+    (*                       | (TopBottom, (x,y)) -> *)
+    (*                       Printf.sprintf "TopBottom (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y) *)
+    (*                      | (LeftRight, (x,y)) -> *)
+    (*                       Printf.sprintf "LeftRight (%s, %s)" (Rect.string_of_rect x) (Rect.string_of_rect y) *)
+    (*                     ) s)); *)
     ()
     
 end and block name = object ( self : 'self )
@@ -76,8 +76,15 @@ end and block name = object ( self : 'self )
   val mutable canvas : block_canvas option = None
   val mutable accum_pos_y = 0
   method set_canvas c = canvas <- Some c
-  method drag (x',_) (x,y) (dx,dy) =
+  method mouse_down button p =
+    (match button with
+      | Event.Right -> BatOption.may (fun x -> x#layout) canvas
+      | _ -> ());
+    super # mouse_down button p
+
+  method drag _ (x,y) (dx,dy) =
     let rect = self#window.pos in
+    let x', _ = dragged_pos in
       if x' < 10 then
         self # invalidate (expand_rect_left dx rect 1)
       else if x' > window.pos.Rect.w - 10 then
@@ -90,7 +97,6 @@ end and block name = object ( self : 'self )
       begin
         window.pos.Rect.x <- (x + 10) / 20 * 20;
         window.pos.Rect.y <- (y + 10) / 20 * 20;
-        BatOption.may (fun x -> x#layout) canvas;
       end
   method value = ""
   method paint state =
