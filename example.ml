@@ -59,9 +59,9 @@ let _ =
   Gui.init 
     (fun () ->
       let g = new desktop in
-      (* let control_pane = new frame (fixed_vertical_layout 5 25) in *)
+      let control_pane = new frame (fixed_vertical_layout 5 25) in
       let edit_pane = new tree in
-      (* let split_control = control_pane in (\* ((new splitter control_pane edit_pane Vertical) :> graphical) in *\) *)
+      let split_control = ((new splitter control_pane edit_pane Vertical) :> graphical) in
       let sx = (new slider) in
       let sy = (new slider) in
       let sz = (new slider) in
@@ -71,10 +71,13 @@ let _ =
       let graphical_pane = new block_canvas in
       let b = (new block) in
       graphical_pane#add b;
-      b#invalidate (Rect.rect (200,200) (80,20));
+      b#invalidate (Rect.rect (300,200) (80,20));
       let b = (new block) in
       graphical_pane#add b;
-      b#invalidate (Rect.rect (300,200) (80,20));
+      b#invalidate (Rect.rect (400,200) (80,20));
+      (* let b = (new block) in *)
+      (* graphical_pane#add b; *)
+      (* b#invalidate (Rect.rect (400,200) (80,20)); *)
       (* let b = (new block) in *)
       (* graphical_pane#add b; *)
       (* b#invalidate (Rect.rect (400,200) (80,20)); *)

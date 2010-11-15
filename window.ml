@@ -60,6 +60,7 @@ let rec draw_window window =
 
 let draw_desktop () = 
   draw_window desktop
+
 let window_path window =
   let bool_of_option = function Some _ -> true | None -> false  in
   let rec find_loop path ({ children; } as window') =
@@ -98,10 +99,8 @@ let find_window position window =
     | [] -> None
     | lst -> Some lst
 
-
-
 let add parent window =
-  parent.children <-  window :: parent.children;
+  parent.children <-  [window] @ parent.children;
   window
 
 

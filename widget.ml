@@ -132,12 +132,14 @@ class draggable = object ( self : 'self )
       let window_pos = Rect.pos window.pos in
       let new_window_pos = Pos.sub (Pos.add window_pos point) dragged_pos in
       let dpos = Pos.sub new_window_pos window_pos in
-      self#drag new_window_pos dpos;
-      let w,h = Rect.size window.pos in
       Event.run_events window (Event.Drag dpos);
+      self#drag point new_window_pos dpos;
       true
 
-  method drag pos dpos = Rect.set_pos window.pos pos
+  method follow_drag dpos =       
+    dragged_pos <- Pos.add dpos dragged_pos;
+
+  method drag point pos dpos = Rect.set_pos window.pos pos
 
   method drag_end = true
 end
@@ -163,7 +165,7 @@ open BatInt
 class draggable_constrained constr = object ( self : 'self )
   inherit draggable
   val mutable constr = constr
-  method drag pos dpos =
+  method drag _ pos dpos =
     match constr with 
       | Horizontal -> window.pos.Rect.x <- fst pos
       | Vertical -> window.pos.Rect.y <- snd pos
@@ -315,7 +317,7 @@ class slider = object ( self : 'self )
   method paint rect state = 
     caption_painter (Printf.sprintf "%2.2f" (drag_value +. value)) 0 rect state
 
-  method drag _ (dx,_) =
+  method drag _ _ (dx,_) =
     drag_value <- step *. (float dx);
     
   method drag_end =
