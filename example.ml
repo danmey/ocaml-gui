@@ -59,14 +59,15 @@ let _ =
   Gui.init 
     (fun () ->
       let g = new desktop in
-      let control_pane = new frame (fixed_vertical_layout 5 25) in
+      (* let control_pane = new frame (fixed_vertical_layout 5 25) in *)
       let edit_pane = new tree in
-      let split_control = ((new splitter control_pane edit_pane Vertical) :> graphical) in
+      (* let split_control = control_pane in (\* ((new splitter control_pane edit_pane Vertical) :> graphical) in *\) *)
       let sx = (new slider) in
       let sy = (new slider) in
       let sz = (new slider) in
       let sw = (new slider) in
       (* let graphical_pane = new sphere_view sx sy sz sw in *)
+      let control_pane = new frame (fixed_vertical_layout 5 25) in
       let graphical_pane = new block_canvas in
       let b = (new block) in
       graphical_pane#add b;
@@ -74,15 +75,15 @@ let _ =
       let b = (new block) in
       graphical_pane#add b;
       b#invalidate (Rect.rect (300,200) (80,20));
-      let b = (new block) in
-      graphical_pane#add b;
-      b#invalidate (Rect.rect (400,200) (80,20));
+      (* let b = (new block) in *)
+      (* graphical_pane#add b; *)
+      (* b#invalidate (Rect.rect (400,200) (80,20)); *)
     
       control_pane#add (sx :> graphical);
       control_pane#add (sy :> graphical);
       control_pane#add (sz :> graphical);
       control_pane#add (sw :> graphical);
-      let split_display = ((new splitter split_control graphical_pane Horizontal) :> graphical) in
+      let split_display = ((new splitter control_pane graphical_pane Horizontal) :> graphical) in
       g#add split_display;
       let w,h = Display.display_size in
       split_display#invalidate (Rect.rect (10,10) (w-20,h-20));

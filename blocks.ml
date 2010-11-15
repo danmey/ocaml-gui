@@ -16,6 +16,7 @@ class block_canvas = object ( self : 'self )
   method add block = 
     super#add block;
     block#set_canvas (self :> block_canvas)
+
   method layout =
     let rects = List.map (fun w -> w # window.pos) widgets in
     let sorted = BatList.sort ~cmp:block_cmp rects in
@@ -78,6 +79,7 @@ end and block = object ( self : 'self )
     window.pos.Rect.x <- ( fst pos + 5 ) / 20 * 20;
     window.pos.Rect.y <- ( snd pos + 5 ) / 20 * 20;
     BatOption.may (fun x -> x#layout) canvas
+
   method invalidate rect =
     super#invalidate rect;
     let left_border_rect = Rect.rect (0,0) (10, rect.Rect.h) in
@@ -86,17 +88,17 @@ end and block = object ( self : 'self )
     right_border#invalidate right_border_rect;
     composite#invalidate rect
 
-  method event (window : Window.window) (ev : Event.event) =
-    (match ev with
-      | Event.Drag (dx, dy) when left_border#window == window ->
-        let rect = self#window.pos in
-        self#invalidate (Rect.rect (rect.Rect.x + dx, rect.Rect.y) (rect.Rect.w - dx, rect.Rect.h));
-        true
-      | Event.Drag (dx, dy) when right_border#window == window ->
-        let rect = self#window.pos in
-        self#invalidate (Rect.rect (rect.Rect.x, rect.Rect.y) (rect.Rect.w + dx, rect.Rect.h));
-        true
-      | _ -> false)   
+  (* method event (window : Window.window) (ev : Event.event) = *)
+  (*   (match ev with *)
+  (*     | Event.Drag (dx, dy) when left_border#window == window -> *)
+  (*       let rect = self#window.pos in *)
+  (*       self#invalidate (Rect.rect (rect.Rect.x + dx, rect.Rect.y) (rect.Rect.w - dx, rect.Rect.h)); *)
+  (*       true *)
+  (*     | Event.Drag (dx, dy) when right_border#window == window -> *)
+  (*       let rect = self#window.pos in *)
+  (*       self#invalidate (Rect.rect (rect.Rect.x, rect.Rect.y) (rect.Rect.w + dx, rect.Rect.h)); *)
+  (*       true *)
+  (*     | _ -> super#event window ev)    *)
         
         
 end
