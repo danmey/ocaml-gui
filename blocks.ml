@@ -62,7 +62,7 @@ class block_canvas = object ( self : 'self )
                         ) s));
     ()
     
-end and block = object ( self : 'self )
+end and block name = object ( self : 'self )
   inherit draggable as super
     
   (* val mutable formed = false *)
@@ -76,7 +76,6 @@ end and block = object ( self : 'self )
   val mutable canvas : block_canvas option = None
   val mutable accum_pos_y = 0
   method set_canvas c = canvas <- Some c
-
   method drag (x',_) (x,y) (dx,dy) =
     let rect = self#window.pos in
       if x' < 10 then
@@ -91,36 +90,11 @@ end and block = object ( self : 'self )
       begin
         window.pos.Rect.x <- (x + 10) / 20 * 20;
         window.pos.Rect.y <- (y + 10) / 20 * 20;
-        BatOption.may (fun x -> x#layout) canvas
+        BatOption.may (fun x -> x#layout) canvas;
       end
-
-  (* method invalidate_after_init rect = *)
-  (*   super#invalidate rect; *)
-  (*   composite#invalidate rect *)
+  method value = ""
+  method paint state =
+    let caption = Printf.sprintf "%s: %s" name self#value in
+    caption_painter caption 0 state
     
-  (* method invalidate_before_init rect = *)
-  (*   super#invalidate rect; *)
-  (*   let left_border_rect = Rect.rect (0,0) (10, rect.Rect.h) in *)
-  (*   let right_border_rect = Rect.rect (rect.Rect.w-10, 0) (10, rect.Rect.h) in *)
-  (*   left_border#invalidate left_border_rect; *)
-  (*   right_border#invalidate right_border_rect; *)
-  (*   composite#invalidate rect *)
-
-  (* method invalidate rect = *)
-  (*   (if not formed then self#invalidate_before_init else self#invalidate_after_init) rect; *)
-  (*     formed <- true; *)
-
-  (* method event (window : Window.window) (ev : Event.event) = *)
-  (*   (match ev with *)
-  (*     | Event.Drag (dx, dy) when left_border#window == window -> *)
-  (*       let rect = self#window.pos in *)
-  (*       self#invalidate (Rect.rect (rect.Rect.x + dx, rect.Rect.y) (rect.Rect.w - dx, rect.Rect.h)); *)
-  (*       true *)
-  (*     | Event.Drag (dx, dy) when right_border#window == window -> *)
-  (*       let rect = self#window.pos in *)
-  (*       self#invalidate (Rect.rect (rect.Rect.x, rect.Rect.y) (rect.Rect.w + dx, rect.Rect.h)); *)
-  (*       true *)
-  (*     | _ -> super#event window ev) *)
-        
-        
 end

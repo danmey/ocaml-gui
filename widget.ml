@@ -72,7 +72,7 @@ let button_painter state rect =
 
 open BatInt
 
-class widget = object ( self : 'self )
+class virtual widget = object ( self : 'self )
   val window : window = (empty_window ())
   method window = window
 end
@@ -103,14 +103,14 @@ class interactive = object ( self : 'self )
     Event.register window
       (fun window ev -> self#event window ev)
 
-  method mouse_down (point : Pos.t) = false
-  method mouse_up (point : Pos.t) = false
-  method mouse_motion (point : Pos.t) = false
+  method mouse_down button (point : Pos.t) = false
+  method mouse_up button (point : Pos.t) = false
+  method mouse_motion button (point : Pos.t) = false
 
   method event wind = function
-    | Event.MouseDown point -> self#mouse_down point
-    | Event.MouseUp point -> self#mouse_up point 
-    | Event.MouseMotion point -> self#mouse_motion point
+    | Event.MouseDown (b,point) -> self#mouse_down b point
+    | Event.MouseUp (b, point) -> self#mouse_up b point 
+    | Event.MouseMotion (b, point) -> self#mouse_motion b point
     | _ -> false
 end
 
@@ -118,17 +118,17 @@ class draggable = object ( self : 'self )
   inherit interactive as super
   val mutable dragged_pos = (0,0)
 
-  method mouse_down point = 
+  method mouse_down _ point = 
     state <- Dragged; 
     dragged_pos <- point; 
     true
       
-  method mouse_up _ = 
+  method mouse_up _ _ = 
     (if self#drag_end then
       state <- Normal);
     true
 
-  method mouse_motion point =
+  method mouse_motion _ point =
       let window_pos = Rect.pos window.pos in
       let new_window_pos = Pos.sub (Pos.add window_pos point) dragged_pos in
       let dpos = Pos.sub new_window_pos window_pos in
@@ -304,8 +304,8 @@ object ( self : 'self )
   inherit interactive as super
   val mutable caption = normal_caption
   method paint state = caption_painter caption 0 state
-  method mouse_down _ = caption <- pushed_caption; true
-  method mouse_up _ = caption <- normal_caption; true
+  method mouse_down _ _ = caption <- pushed_caption; true
+  method mouse_up _ _ = caption <- normal_caption; true
 end
 
 open BatInt

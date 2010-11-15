@@ -1,10 +1,15 @@
 open Draw
 
+type mouse_button =
+  | Left
+  | Right
+  | Middle
+
 type event =
-  | MouseDown of Pos.t
-  | MouseUp of Pos.t
-  | MouseMotion of Pos.t
-  | DoubleClick of Pos.t
+  | MouseDown of mouse_button * Pos.t
+  | MouseUp of mouse_button * Pos.t
+  | MouseMotion of mouse_button * Pos.t
+  | DoubleClick of mouse_button * Pos.t
   | Drag of Pos.t
 
 type signal = { callback : (Window.window -> event -> bool); }
@@ -16,21 +21,21 @@ let register window signal = signals :=  (window, { callback = signal }) :: !sig
 let pre_process_event window = 
   let last_motion_pos = ref None in
   function
-  | MouseDown p -> MouseDown (Window.client_pos window p)
-  | MouseUp p -> MouseUp (Window.client_pos window p)
-  | MouseMotion p -> (match !last_motion_pos with
-      | None -> MouseMotion (Window.client_pos window p)
+  | MouseDown (b, p) -> MouseDown (b, (Window.client_pos window p))
+  | MouseUp (b, p) -> MouseUp (b, Window.client_pos window p)
+  | MouseMotion (b, p) -> (match !last_motion_pos with
+      | None -> MouseMotion (b, (Window.client_pos window p))
       | Some last_pos -> 
         let new_pos = Pos.sub p last_pos in
         last_motion_pos := Some p;
-        MouseMotion (Window.client_pos window new_pos))
+        MouseMotion (b,(Window.client_pos window new_pos)))
   | a -> a
 
 let focused_window = ref None
 
 let run_events from_window event =
   match event with
-    | MouseDown p -> BatOption.may
+    | MouseDown (b, p) -> BatOption.may
       (fun windows ->
         (* let windows = List.rev windows in *)
         Printf.printf "hit_window: %s\n" (Rect.string_of_rect (List.hd windows).Window.pos);
@@ -47,22 +52,28 @@ let run_events from_window event =
           | [] -> ()
         in
         event_loop windows) (Window.find_window p Window.desktop)
-    | MouseUp p ->
+    | MouseUp (b, p) ->
       BatOption.may 
         (fun (window, from_window, callback) ->
           if callback from_window (pre_process_event window event) then
             focused_window := None)
         !focused_window
-    | MouseMotion p ->
+    | MouseMotion (b, p) ->
       BatOption.may
         (fun (window, from_window, callback) ->
           ignore(callback from_window (pre_process_event window event)))
         !focused_window
     | event -> List.iter (fun (window, { callback }) -> ignore(callback from_window (pre_process_event window event))) !signals
 
-let mouse_handler ~button ~state ~x ~y = run_events Window.desktop
+let mouse_handler ~button ~state ~x ~y = 
+  let b = match button with
+    | Glut.LEFT_BUTTON -> Left
+    | Glut.MIDDLE_BUTTON -> Middle
+    | Glut.RIGHT_BUTTON -> Right
+  in
+  run_events Window.desktop
   (match state with
-    | Glut.DOWN -> MouseDown (x, y)
-    | Glut.UP -> MouseUp (x, y))
+    | Glut.DOWN -> MouseDown (b, (x, y))
+    | Glut.UP -> MouseUp (b, (x, y)))
 
-let mouse_motion_handler ~x ~y = run_events Window.desktop (MouseMotion (x,y))
+let mouse_motion_handler ~x ~y = run_events Window.desktop (MouseMotion (Left, (x,y)))
