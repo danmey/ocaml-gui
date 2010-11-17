@@ -37,7 +37,7 @@ class block_canvas = object ( self : 'self )
     let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in
     
     let rec loop = function
-      | x :: xs -> String.concat "tab: \t" (List.map Rect.string_of_rect x) :: (loop xs)
+      | x :: xs -> String.concat "\t" (List.map Rect.string_of_rect x) :: (loop xs)
       | [] -> []
     in
     print_endline (String.concat "\n" (loop stack));
