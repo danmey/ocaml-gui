@@ -66,6 +66,7 @@ let mouse_handler ~button ~state ~x ~y =
     | Glut.LEFT_BUTTON -> Left
     | Glut.MIDDLE_BUTTON -> Middle
     | Glut.RIGHT_BUTTON -> Right
+    | _ -> Middle
   in
   run_events Window.desktop
   (match state with
