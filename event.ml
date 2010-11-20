@@ -35,20 +35,20 @@ let focused_window = ref None
 
 let run_events from_window event =
   match event with
-    | MouseDown (b, p) -> BatOption.may
-      (fun windows ->
-        (* let windows = List.rev windows in *)
+    | MouseDown (b, p) ->
+        (* let windows = List.rev windows in  *)
         let rec event_loop = function
           | window :: rest_windows -> 
             (try 
-               let { callback } = List.assoc window !signals in
+               let { callback } = List.assq window !signals in
+               Printf.printf "event: %s\n" (Rect.string_of_rect window.Window.pos);
                if callback from_window (pre_process_event window event) then
                  focused_window := Some (window, from_window, callback)
                else event_loop rest_windows
              with _ -> event_loop rest_windows)
           | [] -> ()
         in
-        event_loop windows) (Window.find_window p Window.desktop)
+        event_loop (Window.find_window p)
     | MouseUp (b, p) ->
       BatOption.may 
         (fun (window, from_window, callback) ->

@@ -69,15 +69,15 @@ let _ =
       (* let graphical_pane = new sphere_view sx sy sz sw in *)
       let control_pane = new frame (fixed_vertical_layout 5 25) in
       let graphical_pane = new block_canvas in
-      let b = (new block "x") in
-      graphical_pane#add b;
-      b#invalidate (Rect.rect (300,200) (80,20));
-      let b = (new block "y") in
-      graphical_pane#add b;
-      b#invalidate (Rect.rect (400,200) (80,20));
-      let b = (new block "+") in
-      graphical_pane#add b;
-      b#invalidate (Rect.rect (400,200) (80,20));
+      let b1 = (new block "x") in
+      graphical_pane#add b1;
+      b1#invalidate (Rect.rect (300,200) (80,20));
+      let b2 = (new block "y") in
+      graphical_pane#add b2;
+      b2#invalidate (Rect.rect (400,200) (80,20));
+      (* let b = (new block "+") in *)
+      (* graphical_pane#add b; *)
+      (* b#invalidate (Rect.rect (400,200) (80,20)); *)
     
       control_pane#add (sx :> graphical);
       control_pane#add (sy :> graphical);

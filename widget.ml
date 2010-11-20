@@ -1,4 +1,3 @@
-open Window
 open Draw
 
 open BatFloat
@@ -7,7 +6,7 @@ type state = Normal | Pressed | Dragged
 
 let button_painter state rect =
   let c r g b = GlDraw.color (float r/.255., float g/.255., float b/.255.) in
-  let x, y, w, h = center_rect rect in
+  let x, y, w, h = Window.center_rect rect in
   (* Should use skinning instead *)
   match state with
     | Normal ->
@@ -73,21 +72,22 @@ let button_painter state rect =
 open BatInt
 
 class virtual widget = object ( self : 'self )
-  val window : window = (empty_window ())
+  val virtual window : Window.window
   method window = window
 end
 
 class graphical = object ( self : 'self )
   inherit widget
+  val window = (Window.empty_window ())
   val mutable state = Normal
-  initializer window.painter <- (fun rect -> self#paint state rect)
-  method invalidate rect = window.pos <- rect
+  initializer window.Window.painter <- (fun rect -> self#paint state rect)
+  method invalidate rect = window.Window.pos <- rect
   method paint = button_painter
 end
 
 open BatFloat
 let quad_painter rect =
-   let x, y, w, h = center_rect rect in
+   let x, y, w, h = Window.center_rect rect in
    GlDraw.begins `quads;
    GlDraw.vertex ~x ~y ();
    GlDraw.vertex ~x:(x + w) ~y ();
@@ -99,6 +99,7 @@ let quad_painter rect =
 class interactive = object ( self : 'self )
   inherit graphical as super
   method event (window : Window.window) (ev : Event.event) = false
+
   initializer
     Event.register window
       (fun window ev -> self#event window ev)
@@ -119,6 +120,7 @@ class draggable = object ( self : 'self )
   val mutable dragged_pos = (0,0)
 
   method mouse_down _ point = 
+    Printf.printf "draggable mousedown: %s\n" (Rect.string_of_rect self#window.Window.pos);
     state <- Dragged; 
     dragged_pos <- point; 
     true
@@ -129,7 +131,7 @@ class draggable = object ( self : 'self )
     true
 
   method mouse_motion _ point =
-      let window_pos = Rect.pos window.pos in
+      let window_pos = Rect.pos window.Window.pos in
       let new_window_pos = Pos.sub (Pos.add window_pos point) dragged_pos in
       let dpos = Pos.sub new_window_pos window_pos in
       Event.run_events window (Event.Drag dpos);
@@ -139,24 +141,25 @@ class draggable = object ( self : 'self )
   method follow_drag dpos =       
     dragged_pos <- Pos.add dpos dragged_pos;
 
-  method drag point pos dpos = Rect.set_pos window.pos pos
+  method drag point pos dpos = Rect.set_pos window.Window.pos pos
 
   method drag_end = true
 end
 
 class virtual [ 'a ] composite = object ( self : 'self )
-  inherit interactive as super
+  inherit widget as super
   val mutable widgets : 'a list = []
   method add (widget : 'a) = 
-    Window.add window (widget#window); 
+    Window.add self#window (widget#window); 
     widgets <- widgets @ [widget]
   method iter f = List.iter f widgets
 end
 
 class desktop =  object ( self : 'self )
   inherit [ graphical ] composite as super
+  inherit graphical
   initializer 
-    ignore(Window.add Window.desktop window); ()
+    ignore(Window.add Window.desktop window)
 end
 
 type constr = Horizontal | Vertical | HorizontalWith of int
@@ -167,13 +170,14 @@ class draggable_constrained constr = object ( self : 'self )
   val mutable constr = constr
   method drag _ pos dpos =
     match constr with 
-      | Horizontal -> window.pos.Rect.x <- fst pos
-      | Vertical -> window.pos.Rect.y <- snd pos
-      | HorizontalWith amount -> window.pos.Rect.x <- ( fst pos + amount / 2 ) / amount * amount;
+      | Horizontal -> window.Window.pos.Rect.x <- fst pos
+      | Vertical -> window.Window.pos.Rect.y <- snd pos
+      | HorizontalWith amount -> window.Window.pos.Rect.x <- ( fst pos + amount / 2 ) / amount * amount;
 end
 
 class splitter first second constr1 = object ( self : 'self )
-  inherit [ graphical ] composite as super
+  inherit [ graphical ] composite
+  inherit interactive as super
   val mutable constr = constr1
   val split_widget = new draggable_constrained constr1
   val first = first
@@ -191,16 +195,16 @@ class splitter first second constr1 = object ( self : 'self )
       | Event.Drag (dx, dy) when split_widget#window == window ->
         (match constr with
           | Horizontal ->
-            let w,h = Rect.size first#window.pos in
-            let s,_ = Rect.size second#window.pos in
-            let p,_ = Rect.pos second#window.pos in
+            let w,h = Rect.size first#window.Window.pos in
+            let s,_ = Rect.size second#window.Window.pos in
+            let p,_ = Rect.pos second#window.Window.pos in
             first#invalidate (Rect.rect (0,0) (w+dx,h));
             second#invalidate (Rect.rect (p+dx,0) (s-dx,h));
             true
           | Vertical ->
-            let w,h = Rect.size first#window.pos in
-            let _,s = Rect.size second#window.pos in
-            let _,p = Rect.pos second#window.pos in
+            let w,h = Rect.size first#window.Window.pos in
+            let _,s = Rect.size second#window.Window.pos in
+            let _,p = Rect.pos second#window.Window.pos in
             first#invalidate (Rect.rect (0,0) (w, h+dy));
             second#invalidate (Rect.rect (0, p+dy) (w, s-dy));
             true)
@@ -210,15 +214,15 @@ class splitter first second constr1 = object ( self : 'self )
         (match constr with
           | Horizontal ->
             super#invalidate rect;
-            let w,h = Rect.size self#window.pos in
-            let o,_ = Rect.pos split_widget#window.pos in
+            let w,h = Rect.size self#window.Window.pos in
+            let o,_ = Rect.pos split_widget#window.Window.pos in
             split_widget#invalidate (Rect.rect (o,0) (20,h));
             first#invalidate (Rect.rect (0,0) (o,h));
             second#invalidate (Rect.rect (o,0) (w,h-o))
           | Vertical ->
             super#invalidate rect;
-            let w,h = Rect.size self#window.pos in
-            let _,o = Rect.pos split_widget#window.pos in
+            let w,h = Rect.size self#window.Window.pos in
+            let _,o = Rect.pos split_widget#window.Window.pos in
             split_widget#invalidate (Rect.rect (0,o) (w, 20));
             first#invalidate (Rect.rect (0,0) (w, o));
             second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
@@ -227,16 +231,16 @@ class splitter first second constr1 = object ( self : 'self )
         (match constr with
           | Horizontal ->
             super#invalidate rect;
-            let p,_ = Rect.pos window.pos in
-            let w,h = Rect.size window.pos in
+            let p,_ = Rect.pos window.Window.pos in
+            let w,h = Rect.size window.Window.pos in
             let o = p + w / 2 - 10 in
             split_widget#invalidate (Rect.rect (o,0) (20,h));
             first#invalidate (Rect.rect (0,0) (o,h));
             second#invalidate (Rect.rect (o,0) (w,h))
           | Vertical ->
             super#invalidate rect;
-            let _,p = Rect.pos window.pos in
-            let w,h = Rect.size window.pos in
+            let _,p = Rect.pos window.Window.pos in
+            let w,h = Rect.size window.Window.pos in
             let o = p + h / 2 - 10 in
             split_widget#invalidate (Rect.rect (0,o) (w, 20));
             first#invalidate (Rect.rect (0,0) (w, o));
@@ -265,14 +269,15 @@ class [ 'a ] tree =
   in
 object ( self : 'self )
   inherit [ graphical ] composite as super
+  inherit graphical
   method paint state rect =
     let rec loop ident i = function
       | Node (text, id, children) :: xs ->
-        let w,_ = Rect.size self#window.pos in
+        let w,_ = Rect.size self#window.Window.pos in
         let x, y, w, h = 
-          center_rect (BatInt.(Rect.place_in 
+          Window.center_rect (BatInt.(Rect.place_in 
                                  (Rect.rect (0,i*15) (w,13)) 
-                                 self#window.pos)) in
+                                 self#window.Window.pos)) in
         let len = float (text_width text) in
         let ofs_x = (w -. len) /. 2. + x in
         let ofs_x = float ident*30. + x+15. in
@@ -289,7 +294,7 @@ end
 open BatFloat
 
 let caption_painter text _ state rect =
-   let x, y, w, h = center_rect rect in
+   let x, y, w, h = Window.center_rect rect in
    button_painter state rect;
    let len = float (text_width text) in
    let ofs_x = (w - len) / 2. + x in
@@ -355,13 +360,13 @@ let fixed_horizontal_layout spacing width parent_rect d c i =
     Rect.rect (ofs, spacing) (width, h-spacing*2)
 
 class frame layout = object ( self : 'self )
-  inherit [ graphical ] composite as super
-    
+  inherit [ graphical ] composite
+  inherit graphical as super
   method invalidate rect =
     super#invalidate rect;
-    let count = List.length window.children in
+    let count = List.length window.Window.children in
     BatList.iteri (fun i w ->
-      let local_rect = layout (window.pos) (w#window.pos) count i in
+      let local_rect = layout (window.Window.pos) (w#window.Window.pos) count i in
       w # invalidate local_rect) widgets
 end
 
@@ -369,9 +374,9 @@ open BatFloat
 class graphics = object ( self : 'self )
   inherit graphical
   initializer
-    window.painter <- self#draw
+    window.Window.painter <- self#draw
     method draw rect =
-      let x, y, w, h = center_rect rect in
+      let x, y, w, h = Window.center_rect rect in
       GlDraw.begins `quads;
       GlDraw.color (0.,0.,0.);
       GlDraw.vertex ~x ~y ();

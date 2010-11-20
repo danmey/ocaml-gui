@@ -18,9 +18,10 @@ let block_cmp l r =
     l.Rect.x - r.Rect.x
 
 class block_canvas = object ( self : 'self )
-  inherit [ block ] composite as super
+  inherit [ block ] composite as composite
+  inherit graphical as super
   method add block = 
-    super#add block;
+    composite#add block;
     block#set_canvas (self :> block_canvas)
 
   method layout =
@@ -63,44 +64,48 @@ class block_canvas = object ( self : 'self )
     ()
     
 end and block name = object ( self : 'self )
+  inherit [ draggable ] composite as composite
   inherit draggable as super
-    
-  (* val mutable formed = false *)
-  (* val left_border = new draggable_constrained (HorizontalWith 10) *)
-  (* val right_border = new draggable_constrained (HorizontalWith 10) *)
-  (* initializer *)
-  (*   composite#add left_border; *)
-  (*   composite#add right_border; *)
+  val left_border = new draggable_constrained (HorizontalWith 10)
+  val right_border = new draggable_constrained (HorizontalWith 10)
+
+  initializer
+    composite#add left_border;
+    composite#add right_border
     
   (* val mutable canvas : block composite option = None *)
   val mutable canvas : block_canvas option = None
   val mutable accum_pos_y = 0
   method set_canvas c = canvas <- Some c
-  method mouse_down button p =
-    (match button with
-      | Event.Right -> BatOption.may (fun x -> x#layout) canvas
-      | _ -> ());
-    super # mouse_down button p
+  (* method mouse_down button p = *)
+  (*   (match button with *)
+  (*     | Event.Right -> BatOption.may (fun x -> x#layout) canvas *)
+  (*     | _ -> ()); *)
+  (*   super # mouse_down button p *)
 
-  method drag _ (x,y) (dx,dy) =
-    let rect = self#window.pos in
-    let x', _ = dragged_pos in
-      if x' < 10 then
-        self # invalidate (expand_rect_left dx rect 1)
-      else if x' > window.pos.Rect.w - 10 then
-        (self # invalidate 
-          (Rect.rect 
-             (rect.Rect.x, rect.Rect.y) 
-             (rect.Rect.w + dx, rect.Rect.h));
-         self # follow_drag (dx, dy))
-    else
-      begin
-        window.pos.Rect.x <- (x + 10) / 20 * 20;
-        window.pos.Rect.y <- (y + 10) / 20 * 20;
-      end
+  (* method drag _ (x,y) (dx,dy) = *)
+  (*   let grid x = (x + 10) / 20 * 20 in *)
+  (*   let rect = self#window.pos in *)
+  (*   let x', _ = dragged_pos in *)
+  (*     if x' < 10 then *)
+  (*       self # invalidate (expand_rect_left dx rect 10) *)
+  (*     else if x' > window.pos.Rect.w - 10 then *)
+  (*       (self # invalidate  *)
+  (*         (Rect.rect  *)
+  (*            (rect.Rect.x, rect.Rect.y)  *)
+  (*            (grid (rect.Rect.w + dx), rect.Rect.h)); *)
+  (*        self # follow_drag (dx, dy)) *)
+  (*     else (window.pos.Rect.x <- grid x; *)
+  (*           window.pos.Rect.y <- grid y) *)
+
   method value = ""
   method paint state =
     let caption = Printf.sprintf "%s: %s" name self#value in
     caption_painter caption 0 state
-    
+
+  method invalidate rect =
+    super#invalidate rect;
+    left_border#invalidate (Rect.rect (0,0) (10, rect.Rect.h));
+    right_border#invalidate (Rect.rect (rect.Rect.w-10,0) (10, rect.Rect.h))
+
 end

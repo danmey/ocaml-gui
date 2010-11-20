@@ -84,21 +84,26 @@ let abs_pos window =
     (fun rect { pos } ->
       Rect.place_in pos rect) desktop.pos path
 
-let find_window position window =
-  let rec loop window =
-    let rect = abs_pos window in
-    let x, y = position in
+let find_window position =
+  let rec loop rect window =
+    let rect = Rect.place_in window.pos rect  in
     (if Rect.is_in rect position then
-        [window]
+        (Printf.printf "find_window: %s\n" (Rect.string_of_rect rect);
+        [window] @ List.concat (List.map (loop rect) window.children))
      else 
         [])
-    @ List.concat (List.map loop window.children) in
-  match List.rev (loop window) with
-    | [] -> None
-    | lst -> Some lst
+  in
+  let lst = List.rev (loop (Rect.rect (0,0) (0,0)) desktop) in
+  (match lst with
+    | hd :: tl -> Printf.printf "first_window: %s\n" (Rect.string_of_rect hd.pos)
+    | [] -> ());
+    lst
+      
+
+  
 
 let add parent window =
-  parent.children <-  [window] @ parent.children;
+  parent.children <-  parent.children @ [window];
   window
 
 
