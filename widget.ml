@@ -4,8 +4,8 @@ open BatFloat
 
 type state = Normal | Pressed | Dragged
 
+let c r g b = GlDraw.color (float r/.255., float g/.255., float b/.255.)
 let button_painter state rect =
-  let c r g b = GlDraw.color (float r/.255., float g/.255., float b/.255.) in
   let x, y, w, h = Window.center_rect rect in
   (* Should use skinning instead *)
   match state with
@@ -118,9 +118,15 @@ end
 class virtual [ 'a ] composite = object ( self : 'self )
   inherit widget as super
   val mutable widgets : 'a list = []
+
   method add (widget : 'a) = 
     Window.add self#window (widget#window); 
     widgets <- widgets @ [widget]
+
+  method remove widget =
+    Window.remove self # window (widget#window);
+    widgets <- BatList.remove_if ((==) widget) widgets
+
   method iter f = List.iter f widgets
 end
 
@@ -130,19 +136,23 @@ class canvas = object ( self : 'self )
   method add block = 
     composite#add block;
     block#set_parent (self :> canvas)
-
+    
   method dragged widget dpos = ()
+  method clicked widget button pos = ()
 
 end and draggable = object ( self : 'self )
   inherit interactive as super
   val mutable dragged_pos = (0,0)
   val mutable parent : canvas option = None
+  method value = ""
 
   method set_parent c = parent <- Some c
+  method name = ""
 
-  method mouse_down _ point = 
+  method mouse_down button point = 
     state <- Dragged; 
-    dragged_pos <- point; 
+    dragged_pos <- point;
+    BatOption.may (fun parent -> parent # clicked (self :> draggable) button point) parent;
     true
       
   method mouse_up _ _ = 
@@ -171,6 +181,7 @@ end
 
 class fixed = object ( self : 'self )
   inherit draggable
+
   method follow_drag dpos = () 
   method drag point pos dpos = ()
   method drag_end = false
@@ -321,15 +332,47 @@ let caption_painter text _ state rect =
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
 
+let caption_painter2 text _ state rect =
+   let x, y, w, h = Window.center_rect rect in
+   let len = float (text_width text) in
+   let ofs_x = (w - len) / 2. + x in
+   let ofs_y = (h - 10.) / 2. + y in
+   GlDraw.begins `lines;
+   
+   c 255 0 0;
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+   
+   GlDraw.vertex ~x:x ~y:(y + h-1.) ();
+   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+   
+   c 255 132 132;
+   GlDraw.vertex ~x:x ~y:y ();
+   GlDraw.vertex ~x:(x + w-2.) ~y:y ();
+   
+   GlDraw.vertex ~x:x ~y:y ();
+   GlDraw.vertex ~x:x ~y:(y+h-2.) ();
+   GlDraw.ends ();
+
+   draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
+   ()
+
 class button = 
   let normal_caption = "Push me!" in
   let pushed_caption = "Pushed" in
 object ( self : 'self )
-  inherit interactive as super
+  inherit fixed as super
   val mutable caption = normal_caption
   method paint state = caption_painter caption 0 state
   method mouse_down _ _ = caption <- pushed_caption; true
   method mouse_up _ _ = caption <- normal_caption; true
+end
+
+class label name = 
+object ( self : 'self )
+  inherit fixed as super
+  val mutable caption = name
+  method paint state = caption_painter2 caption 0 state
 end
 
 open BatInt
@@ -338,6 +381,7 @@ class slider = object ( self : 'self )
   val mutable value = 0.
   val mutable step = 0.01
   val mutable drag_value = 0.0
+
   method paint rect state = 
     caption_painter (Printf.sprintf "%2.2f" (drag_value +. value)) 0 rect state
 
@@ -348,8 +392,9 @@ class slider = object ( self : 'self )
     value <- value +. drag_value;
     drag_value <- 0.;
     true
-  method value = value
+  (* method value = value *)
 end
+
 
 type layout = Rect.t -> Rect.t -> int -> int -> Rect.t
 let horizontal_layout spacing parent_rect _ c i =
@@ -404,4 +449,29 @@ class graphics = object ( self : 'self )
       GlDraw.vertex ~x ~y:(y + h) ();
       GlDraw.ends ();
       ()
+end
+
+open BatInt
+class menu pos items = object ( self : 'self)
+  inherit frame (fixed_vertical_layout 5 20)
+  val mutable widget_items : (draggable * string) list = []
+  initializer
+  let max_width = ref 0 in
+  widget_items <- List.fold_left (fun acc name -> acc @ [(new label name :> draggable), name]) [] items;
+  List.iter 
+    (fun (widget, name) -> 
+      self # add widget;
+      let len = text_width name in
+      if len > !max_width then
+        max_width := len) widget_items;
+  self # invalidate (Rect.rect pos (!max_width+20, (List.length items) * 25 + 20))
+    
+  method clicked widget button pos =
+    print_endline "clicked";
+    BatOption.may (fun parent -> parent # remove (self :> draggable)) parent;
+    Event.run_events self # window 
+      (Event.Custom ("menu_item", 
+                     pos, 
+                     (List.assq widget widget_items)))
+    
 end

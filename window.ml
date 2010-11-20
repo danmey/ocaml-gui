@@ -75,7 +75,7 @@ let window_path window =
           with _ -> None
   in
   match find_loop [] desktop with
-    | None -> failwith "window_path: window not found."
+    | None -> []
     | Some path -> List.rev path
 
 let abs_pos window =
@@ -101,6 +101,9 @@ let add parent window =
   parent.children <-  parent.children @ [window];
   window
 
+let remove parent window =
+  parent.children <- BatList.remove_if ((==) window) parent.children;
+  ()
 
 let relative_pos window_relative window =
   let window_relative_pos = abs_pos window_relative in

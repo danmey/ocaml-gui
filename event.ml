@@ -10,6 +10,7 @@ type event =
   | MouseUp of mouse_button * Pos.t
   | MouseMotion of mouse_button * Pos.t
   | DoubleClick of mouse_button * Pos.t
+  | Custom of string * Pos.t * string
   | Drag of Pos.t
 
 type signal = { callback : (Window.window -> event -> bool); }

@@ -31,7 +31,7 @@ class block name = object ( self : 'self )
   inherit draggable as super
   val left_border = new draggable_constrained (HorizontalWith 10)
   val right_border = new draggable_constrained (HorizontalWith 10)
-
+  val name = name
   initializer
     canvas#add left_border;
     canvas#add right_border
@@ -42,7 +42,7 @@ class block name = object ( self : 'self )
     window.pos.Rect.y <- grid y
 
   method value = ""
-
+  method name = name
   method paint state =
     let caption = Printf.sprintf "%s: %s" name self#value in
     caption_painter caption 0 state
@@ -67,13 +67,13 @@ end
 class block_canvas = object ( self : 'self)
   inherit canvas
   inherit fixed as super
-    
+  val mutable last_mouse_pos = (0,0)
   method mouse_down button pos =
     match button with
-      | Event.Right ->       
-        let b = (new block "x") in
-        self#add (b :> draggable);
-        b#invalidate (Rect.rect pos (80,20));
+      | Event.Right ->
+        last_mouse_pos <- pos;
+        let m = new menu pos  ["perlin"; "add"; "clamp";] in
+        self # add (m :> draggable);
         true
       | Event.Middle ->
         self # layout; true
@@ -81,6 +81,7 @@ class block_canvas = object ( self : 'self)
 
   method layout =
     let rects = List.map (fun w -> w # window.pos) widgets in
+    let widget_rects = List.combine rects widgets in
     let sorted = BatList.sort ~cmp:block_cmp rects in
     let rec stack_loop acc cur_y = function
       | x :: xs when x.Rect.y = cur_y ->
@@ -93,10 +94,17 @@ class block_canvas = object ( self : 'self)
     let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in
     
     let rec loop = function
-      | x :: xs -> String.concat "\t" (List.map Rect.string_of_rect x) :: (loop xs)
+      | x :: xs -> String.concat "\t" (List.map (fun rect -> (List.assoc rect widget_rects)#name) x) :: (loop xs)
       | [] -> []
     in
     print_endline (String.concat "\n" (loop stack));
     print_endline "";
+    method event wind = function
+      | Event.Custom ("menu_item", pos, what) -> 
+          let b = (new block what) in
+          self#add (b :> draggable);
+          b#invalidate (Rect.rect last_mouse_pos (80, 20));
+        true
+      | ev -> super # event wind ev
 
 end
