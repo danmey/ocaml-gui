@@ -41,7 +41,6 @@ let run_events from_window event =
           | window :: rest_windows -> 
             (try 
                let { callback } = List.assq window !signals in
-               Printf.printf "event: %s\n" (Rect.string_of_rect window.Window.pos);
                if callback from_window (pre_process_event window event) then
                  focused_window := Some (window, from_window, callback)
                else event_loop rest_windows

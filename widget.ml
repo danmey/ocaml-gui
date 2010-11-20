@@ -115,12 +115,32 @@ class interactive = object ( self : 'self )
     | _ -> false
 end
 
-class draggable = object ( self : 'self )
+class virtual [ 'a ] composite = object ( self : 'self )
+  inherit widget as super
+  val mutable widgets : 'a list = []
+  method add (widget : 'a) = 
+    Window.add self#window (widget#window); 
+    widgets <- widgets @ [widget]
+  method iter f = List.iter f widgets
+end
+
+class canvas = object ( self : 'self )
+  inherit [ draggable ] composite as composite
+  inherit graphical as super
+  method add block = 
+    composite#add block;
+    block#set_parent (self :> canvas)
+
+  method dragged widget dpos = ()
+
+end and draggable = object ( self : 'self )
   inherit interactive as super
   val mutable dragged_pos = (0,0)
+  val mutable parent : canvas option = None
+
+  method set_parent c = parent <- Some c
 
   method mouse_down _ point = 
-    Printf.printf "draggable mousedown: %s\n" (Rect.string_of_rect self#window.Window.pos);
     state <- Dragged; 
     dragged_pos <- point; 
     true
@@ -141,23 +161,24 @@ class draggable = object ( self : 'self )
   method follow_drag dpos =       
     dragged_pos <- Pos.add dpos dragged_pos;
 
-  method drag point pos dpos = Rect.set_pos window.Window.pos pos
-
+  method drag point pos dpos = 
+    print_endline "drag";
+    Rect.set_pos window.Window.pos pos;
+    BatOption.may (fun parent -> parent#dragged (self :> draggable) dpos) parent
+  
   method drag_end = true
 end
 
-class virtual [ 'a ] composite = object ( self : 'self )
-  inherit widget as super
-  val mutable widgets : 'a list = []
-  method add (widget : 'a) = 
-    Window.add self#window (widget#window); 
-    widgets <- widgets @ [widget]
-  method iter f = List.iter f widgets
+class fixed = object ( self : 'self )
+  inherit draggable
+  method follow_drag dpos = () 
+  method drag point pos dpos = ()
+  method drag_end = false
 end
 
 class desktop =  object ( self : 'self )
   inherit [ graphical ] composite as super
-  inherit graphical
+  inherit fixed
   initializer 
     ignore(Window.add Window.desktop window)
 end
@@ -168,31 +189,32 @@ open BatInt
 class draggable_constrained constr = object ( self : 'self )
   inherit draggable
   val mutable constr = constr
-  method drag _ pos dpos =
-    match constr with 
+  method drag a pos dpos =
+    (match constr with 
       | Horizontal -> window.Window.pos.Rect.x <- fst pos
       | Vertical -> window.Window.pos.Rect.y <- snd pos
-      | HorizontalWith amount -> window.Window.pos.Rect.x <- ( fst pos + amount / 2 ) / amount * amount;
+      | HorizontalWith amount -> window.Window.pos.Rect.x <- ( fst pos + amount / 2 ) / amount * amount);
+    BatOption.may (fun parent -> parent#dragged (self :> draggable) dpos) parent
+
 end
 
 class splitter first second constr1 = object ( self : 'self )
-  inherit [ graphical ] composite
-  inherit interactive as super
+  inherit canvas as super
   val mutable constr = constr1
   val split_widget = new draggable_constrained constr1
   val first = first
   val second = second
   val mutable formed = false
   initializer
-    self#add (split_widget :> graphical);
-    self#add (first :> graphical);
-    self#add (second :> graphical);
+    self#add (split_widget);
+    self#add (first :> fixed);
+    self#add (second :> fixed);
     ()
 
   (* VERY CRUFTY CODE, needs to tide up this! *)
-  method event (window : Window.window) (ev : Event.event) = 
-    match ev with
-      | Event.Drag (dx, dy) when split_widget#window == window ->
+  method dragged widget (dx, dy) =
+    print_endline "dragged";
+      if split_widget == widget then
         (match constr with
           | Horizontal ->
             let w,h = Rect.size first#window.Window.pos in
@@ -200,15 +222,12 @@ class splitter first second constr1 = object ( self : 'self )
             let p,_ = Rect.pos second#window.Window.pos in
             first#invalidate (Rect.rect (0,0) (w+dx,h));
             second#invalidate (Rect.rect (p+dx,0) (s-dx,h));
-            true
           | Vertical ->
             let w,h = Rect.size first#window.Window.pos in
             let _,s = Rect.size second#window.Window.pos in
             let _,p = Rect.pos second#window.Window.pos in
             first#invalidate (Rect.rect (0,0) (w, h+dy));
-            second#invalidate (Rect.rect (0, p+dy) (w, s-dy));
-            true)
-      | _ -> false
+            second#invalidate (Rect.rect (0, p+dy) (w, s-dy)))
         
   method invalidate_after_init rect =
         (match constr with
@@ -236,7 +255,7 @@ class splitter first second constr1 = object ( self : 'self )
             let o = p + w / 2 - 10 in
             split_widget#invalidate (Rect.rect (o,0) (20,h));
             first#invalidate (Rect.rect (0,0) (o,h));
-            second#invalidate (Rect.rect (o,0) (w,h))
+            second#invalidate (Rect.rect (o+20,0) (w,h))
           | Vertical ->
             super#invalidate rect;
             let _,p = Rect.pos window.Window.pos in
@@ -269,7 +288,7 @@ class [ 'a ] tree =
   in
 object ( self : 'self )
   inherit [ graphical ] composite as super
-  inherit graphical
+  inherit fixed
   method paint state rect =
     let rec loop ident i = function
       | Node (text, id, children) :: xs ->
@@ -360,8 +379,8 @@ let fixed_horizontal_layout spacing width parent_rect d c i =
     Rect.rect (ofs, spacing) (width, h-spacing*2)
 
 class frame layout = object ( self : 'self )
-  inherit [ graphical ] composite
-  inherit graphical as super
+  inherit canvas as super
+  inherit fixed
   method invalidate rect =
     super#invalidate rect;
     let count = List.length window.Window.children in
@@ -372,7 +391,7 @@ end
 
 open BatFloat
 class graphics = object ( self : 'self )
-  inherit graphical
+  inherit fixed
   initializer
     window.Window.painter <- self#draw
     method draw rect =

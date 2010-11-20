@@ -88,16 +88,11 @@ let find_window position =
   let rec loop rect window =
     let rect = Rect.place_in window.pos rect  in
     (if Rect.is_in rect position then
-        (Printf.printf "find_window: %s\n" (Rect.string_of_rect rect);
-        [window] @ List.concat (List.map (loop rect) window.children))
+        [window] @ List.concat (List.map (loop rect) window.children)
      else 
         [])
   in
-  let lst = List.rev (loop (Rect.rect (0,0) (0,0)) desktop) in
-  (match lst with
-    | hd :: tl -> Printf.printf "first_window: %s\n" (Rect.string_of_rect hd.pos)
-    | [] -> ());
-    lst
+  List.rev (loop (Rect.rect (0,0) (0,0)) desktop)
       
 
   
