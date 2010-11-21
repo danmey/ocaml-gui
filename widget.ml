@@ -210,7 +210,9 @@ class draggable_constrained constr = object ( self : 'self )
 end
 
 class splitter first second constr1 = object ( self : 'self )
+  inherit draggable
   inherit canvas as super
+ 
   val mutable constr = constr1
   val split_widget = new draggable_constrained constr1
   val first = first
@@ -218,13 +220,12 @@ class splitter first second constr1 = object ( self : 'self )
   val mutable formed = false
   initializer
     self#add (split_widget);
-    self#add (first :> fixed);
-    self#add (second :> fixed);
+    self#add (first);
+    self#add (second);
     ()
 
   (* VERY CRUFTY CODE, needs to tide up this! *)
   method dragged widget (dx, dy) =
-    print_endline "dragged";
       if split_widget == widget then
         (match constr with
           | Horizontal ->

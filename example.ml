@@ -59,15 +59,14 @@ let _ =
   Gui.init 
     (fun () ->
       let g = new desktop in
-      let control_pane = new frame (fixed_vertical_layout 5 25) in
-      let edit_pane = new tree in
-      let split_control = ((new splitter control_pane edit_pane Vertical) :> graphical) in
+      let control_pane = (new texture_preview :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
+      let edit_pane = new frame (fixed_vertical_layout 5 25) in
       let sx = (new slider) in
       let sy = (new slider) in
       let sz = (new slider) in
       let sw = (new slider) in
       (* let graphical_pane = new sphere_view sx sy sz sw in *)
-      let control_pane = new frame (fixed_vertical_layout 5 25) in
+      (* let control_pane = new frame (fixed_vertical_layout 5 25) in *)
       let graphical_pane = new block_canvas in
       (* let b1 = (new block "x") in *)
       (* graphical_pane#add (b1 :> draggable); *)
@@ -79,11 +78,12 @@ let _ =
       (* graphical_pane#add b; *)
       (* b#invalidate (Rect.rect (400,200) (80,20)); *)
     
-      control_pane#add (sx :> fixed);
-      control_pane#add (sy :> fixed);
-      control_pane#add (sz :> fixed);
-      control_pane#add (sw :> fixed);
-      let split_display = ((new splitter control_pane graphical_pane Horizontal) :> graphical) in
+      edit_pane#add (sx :> fixed);
+      edit_pane#add (sy :> fixed);
+      edit_pane#add (sz :> fixed);
+      edit_pane#add (sw :> fixed);
+      let split_control = (new splitter control_pane (edit_pane :> draggable) Vertical) in
+      let split_display = ((new splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal) :> graphical) in
       g#add split_display;
       let w,h = Display.display_size in
       split_display#invalidate (Rect.rect (10,10) (w-20,h-20));

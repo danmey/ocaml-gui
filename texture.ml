@@ -63,4 +63,13 @@ let make_image arr =
       GlTex.image2d image;
       tid
 
+  let gl_maketex arr  = 
+    let image = make_image arr in
+    let tid = GlTex.gen_texture() in
+      GlTex.bind_texture `texture_2d tid;
+      GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
+      GlTex.parameter ~target:`texture_2d (`min_filter `nearest); 
+      GlTex.image2d image;
+      tid
+
 end

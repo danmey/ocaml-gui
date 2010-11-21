@@ -106,5 +106,34 @@ class block_canvas = object ( self : 'self)
           b#invalidate (Rect.rect last_mouse_pos (80, 20));
         true
       | ev -> super # event wind ev
+end
 
+open BatFloat
+class texture_preview = object ( self : 'self )
+  inherit graphics
+  val mutable texid = None
+  initializer
+    window.Window.painter <- self#draw;
+    texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 0.4))))
+
+    method draw rect =
+      print_endline "draw";
+      BatOption.may (fun texid ->
+        GlTex.bind_texture ~target:`texture_2d texid;
+        GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
+        GlTex.parameter ~target:`texture_2d (`min_filter `nearest); 
+        Gl.enable `texture_2d;
+        let x, y, w, h = Window.center_rect rect in
+        GlDraw.begins `quads;
+        GlTex.coord2 (0.0, 0.0);
+        GlDraw.vertex ~x ~y ();
+        GlTex.coord2 (1.0, 0.0);
+        GlDraw.vertex ~x:(x + w) ~y ();
+        GlTex.coord2 (1.0, 1.0);
+        GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
+        GlTex.coord2 (0.0, 1.0);
+        GlDraw.vertex ~x ~y:(y + h) ();
+        GlDraw.ends ();
+        Gl.disable `texture_2d;
+      ) texid; ()
 end
