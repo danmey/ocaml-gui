@@ -225,7 +225,6 @@ class splitter first second constr1 = object ( self : 'self )
   val split_widget = new draggable_constrained constr1
   val first = first
   val second = second
-  val mutable formed = false
   initializer
     self#add (split_widget);
     self#add (first);
@@ -235,38 +234,22 @@ class splitter first second constr1 = object ( self : 'self )
   (* VERY CRUFTY CODE, needs to tide up this! *)
   method dragged widget (dx, dy) =
       if split_widget == widget then
-        (match constr with
+        let first_rect = first#window.Window.pos in
+        let second_rect = second#window.Window.pos in
+        match constr with
           | Horizontal ->
-            let w,h = Rect.size first#window.Window.pos in
-            let s,_ = Rect.size second#window.Window.pos in
-            let p,_ = Rect.pos second#window.Window.pos in
-            first#invalidate (Rect.rect (0,0) (w+dx,h));
-            second#invalidate (Rect.rect (p+dx,0) (s-dx,h));
+            first # invalidate { first_rect with Rect.w = first_rect.Rect.w + dx };
+            second # invalidate { second_rect with 
+              Rect.w = second_rect.Rect.w - dx; 
+              Rect.x = second_rect.Rect.x + dx }
           | Vertical ->
-            let w,h = Rect.size first#window.Window.pos in
-            let _,s = Rect.size second#window.Window.pos in
-            let _,p = Rect.pos second#window.Window.pos in
-            first#invalidate (Rect.rect (0,0) (w, h+dy));
-            second#invalidate (Rect.rect (0, p+dy) (w, s-dy)))
+            first # invalidate { first_rect with 
+              Rect.h = first_rect.Rect.h + dy };
+            second # invalidate { second_rect with 
+              Rect.h = second_rect.Rect.h - dy; 
+              Rect.y = second_rect.Rect.y + dy }
         
-  method invalidate_after_init rect =
-        (match constr with
-          | Horizontal ->
-            super#invalidate rect;
-            let w,h = Rect.size self#window.Window.pos in
-            let o,_ = Rect.pos split_widget#window.Window.pos in
-            split_widget#invalidate (Rect.rect (o,0) (20,h));
-            first#invalidate (Rect.rect (0,0) (o,h));
-            second#invalidate (Rect.rect (o,0) (w,h-o))
-          | Vertical ->
-            super#invalidate rect;
-            let w,h = Rect.size self#window.Window.pos in
-            let _,o = Rect.pos split_widget#window.Window.pos in
-            split_widget#invalidate (Rect.rect (0,o) (w, 20));
-            first#invalidate (Rect.rect (0,0) (w, o));
-            second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
-
-  method invalidate_before_init rect = 
+  method invalidate rect =
         (match constr with
           | Horizontal ->
             super#invalidate rect;
@@ -284,11 +267,6 @@ class splitter first second constr1 = object ( self : 'self )
             split_widget#invalidate (Rect.rect (0,o) (w, 20));
             first#invalidate (Rect.rect (0,0) (w, o));
             second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
-
-  method invalidate rect =
-    (if not formed then self#invalidate_before_init else self#invalidate_after_init) rect;
-      formed <- true;
-      
 end
 
 
@@ -385,6 +363,7 @@ object ( self : 'self )
 end
 
 open BatInt
+
 class slider = object ( self : 'self )
   inherit draggable_constrained Horizontal as super
   val mutable value = 0.
@@ -392,8 +371,9 @@ class slider = object ( self : 'self )
   val mutable drag_value = 0.0
 
   method value = string_of_float value
+   
   method paint rect state = 
-    caption_painter (Printf.sprintf "%2.2f" (drag_value +. value)) 0 rect state
+    caption_painter (self#caption (drag_value +. value)) 0 rect state
 
   method drag _ _ (dx,_) =
     drag_value <- step *. (float dx);
@@ -401,7 +381,37 @@ class slider = object ( self : 'self )
   method drag_end =
     value <- value +. drag_value;
     drag_value <- 0.;
+    self # slide_end value;
     true
+      
+  method slide_end value = ()
+
+  method caption value = 
+    Printf.sprintf "%2.2f" value
+    
+  (* method value = value *)
+end
+
+open BatFloat
+let round v = 
+  if fst (modf v) >= 0.5 then
+    snd (modf v) +. 1.
+  else
+    snd (modf v)
+
+open BatInt
+class int_slider = object ( self : 'self )
+  inherit slider
+
+  method drag_end =
+    value <- round (value +. drag_value);
+    drag_value <- 0.;
+    self # slide_end value;
+    true
+
+  method caption value = 
+    Printf.sprintf "%d" (int_of_float (round value))
+
   (* method value = value *)
 end
 

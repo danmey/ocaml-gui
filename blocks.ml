@@ -146,3 +146,19 @@ class texture_preview trigger = object ( self : 'self )
       | ev -> super # event wind ev
     
 end
+
+type property_type = 
+  | Float of float * float * float
+  | Int of int * int * int
+
+type property = string * property_type
+    
+(* class properties = object (self : 'self) *)
+(*   inherit frame (fixed_vertical_layout 5 25) *)
+    
+(*   method set_properties = List.iter  *)
+(*     (function  *)
+(*       | (name, Float (start, left, right)) -> *)
+      
+
+(* end *)
