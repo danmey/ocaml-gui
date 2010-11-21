@@ -14,6 +14,7 @@ type event =
   | MouseMotion of mouse_button * Pos.t
   | DoubleClick of mouse_button * Pos.t
   | Custom of string * Pos.t * string
+  | ValueChanged
   | Parameters of (string * value) list
   | Drag of Pos.t
 

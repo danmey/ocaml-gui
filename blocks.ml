@@ -81,27 +81,28 @@ class block_canvas = object ( self : 'self)
       | _ -> super # mouse_down button pos
 
   method layout =
-    let rects = List.map (fun w -> w # window.pos) widgets in
-    let widget_rects = List.combine rects widgets in
-    let sorted = BatList.sort ~cmp:block_cmp rects in
-    let rec stack_loop acc cur_y = function
-      | x :: xs when x.Rect.y = cur_y ->
-        (match acc with
-          | [] -> stack_loop ([x] :: acc) cur_y xs
-          | a :: b -> stack_loop ((a @ [x]) :: b) cur_y xs)
-      | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs
-      | [] -> acc in
+    (* let rects = List.map (fun w -> w # window.pos) widgets in *)
+    (* let widget_rects = List.combine rects widgets in *)
+    (* let sorted = BatList.sort ~cmp:block_cmp rects in *)
+    (* let rec stack_loop acc cur_y = function *)
+    (*   | x :: xs when x.Rect.y = cur_y -> *)
+    (*     (match acc with *)
+    (*       | [] -> stack_loop ([x] :: acc) cur_y xs *)
+    (*       | a :: b -> stack_loop ((a @ [x]) :: b) cur_y xs) *)
+    (*   | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs *)
+    (*   | [] -> acc in *)
     
-    let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in
+    (* let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in *)
     
-    let rec loop = function
-      | x :: xs -> String.concat "\t" (List.map (fun rect -> (List.assoc rect widget_rects)#name) x) :: (loop xs)
-      | [] -> []
-    in
-    let rec tree_loop parent_name = function
-      | x :: xs -> Children parent_name (List.map (fun rect -> (List.assoc rect widget_rects) # name) x) :: (tree_loop xs)
-      | [] -> []
-    in
+    (* let rec loop = function *)
+    (*   | x :: xs -> String.concat "\t" (List.map (fun rect -> (List.assoc rect widget_rects)#name) x) :: (loop xs) *)
+    (*   | [] -> [] *)
+    (* in *)
+    ()
+    (* let rec tree_loop parent_name = function *)
+    (*   | x :: xs -> Children parent_name (List.map (fun rect -> (List.assoc rect widget_rects) # name) x) :: (tree_loop xs) *)
+    (*   | [] -> [] *)
+    (* in *)
                      
     method event wind = 
       function
@@ -156,7 +157,13 @@ type property_type =
   | Int of int property_value
 
 type property = string * property_type
+
+(* class property_slider = object (self : 'self) *)
+(*   inherit slider *)
     
+(*   (\* method slide_end value =  *\) *)
+(*   (\*   Custom ( *\) *)
+(* end     *)
 class properties = object (self : 'self)
   inherit frame (fixed_vertical_layout 5 25)
     
@@ -170,7 +177,9 @@ class properties = object (self : 'self)
         self # add ((new slider name min max step) :> draggable)
       | (name, Int { min; max; default; step }) -> 
         self # add ((new int_slider name min max step) :> draggable))
-
+    
+  (* method property_changed widget value = *)
+  (*   () *)
 end
 
 let operators = ["clouds",

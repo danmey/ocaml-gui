@@ -69,6 +69,17 @@ let button_painter state rect =
       GlDraw.vertex ~x:x ~y:(y+h-2.) ();
       GlDraw.ends ()
 
+open BatFloat
+(* let quad_painter rect = *)
+(*    let x, y, w, h = Window.center_rect rect in *)
+(*    GlDraw.begins `quads; *)
+(*    GlDraw.vertex ~x ~y (); *)
+(*    GlDraw.vertex ~x:(x + w) ~y (); *)
+(*    GlDraw.vertex ~x:(x + w) ~y:(y + h) (); *)
+(*    GlDraw.vertex ~x ~y:(y + h) (); *)
+(*    GlDraw.ends (); *)
+(*    () *)
+
 open BatInt
 
 class virtual widget = object ( self : 'self )
@@ -84,17 +95,6 @@ class graphical = object ( self : 'self )
   method invalidate rect = window.Window.pos <- rect
   method paint = button_painter
 end
-
-open BatFloat
-let quad_painter rect =
-   let x, y, w, h = Window.center_rect rect in
-   GlDraw.begins `quads;
-   GlDraw.vertex ~x ~y ();
-   GlDraw.vertex ~x:(x + w) ~y ();
-   GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
-   GlDraw.vertex ~x ~y:(y + h) ();
-   GlDraw.ends ();
-   ()
 
 class interactive = object ( self : 'self )
   inherit graphical as super
@@ -248,6 +248,7 @@ class splitter first second constr1 = object ( self : 'self )
             second # invalidate { second_rect with 
               Rect.h = second_rect.Rect.h - dy; 
               Rect.y = second_rect.Rect.y + dy }
+          | _ -> failwith "splitter.dragged: Not supported"
         
   method invalidate rect =
         (match constr with
@@ -275,39 +276,39 @@ type 'a element_tree = Node of string * 'a * 'a element_tree list
 
 open BatFloat
 
-class [ 'a ] tree =
-  let sample_tree =
-      [Node ("tool1", 1, [
-        Node ("tool11", 1,[]);
-        Node ("tool12", 1,[])
-        ]);
-       Node ("tool2", 2, []);
-       Node ("tool3", 3, [])] 
-  in
-object ( self : 'self )
-  inherit [ graphical ] composite as super
-  inherit fixed
-  method paint state rect =
-    let rec loop ident i = function
-      | Node (text, id, children) :: xs ->
-        let w,_ = Rect.size self#window.Window.pos in
-        let x, y, w, h = 
-          Window.center_rect (BatInt.(Rect.place_in 
-                                 (Rect.rect (0,i*15) (w,13)) 
-                                 self#window.Window.pos)) in
-        let len = float (text_width text) in
-        let ofs_x = (w -. len) /. 2. + x in
-        let ofs_x = float ident*30. + x+15. in
-        let ofs_y = (h -. 10.) /. 2. + y in
-        let ofs_y = y+15. in
-        draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
-        loop BatInt.(ident+1) BatInt.(i+1) children;
-        loop ident BatInt.(i+1+List.length children) xs
-      | [] -> ()
-    in
-    loop 0 0 sample_tree
+(* class [ 'a ] tree = *)
+(*   let sample_tree = *)
+(*       [Node ("tool1", 1, [ *)
+(*         Node ("tool11", 1,[]); *)
+(*         Node ("tool12", 1,[]) *)
+(*         ]); *)
+(*        Node ("tool2", 2, []); *)
+(*        Node ("tool3", 3, [])]  *)
+(*   in *)
+(* object ( self : 'self ) *)
+(*   inherit [ graphical ] composite as super *)
+(*   inherit fixed *)
+(*   method paint state rect = *)
+(*     let rec loop ident i = function *)
+(*       | Node (text, id, children) :: xs -> *)
+(*         let w,_ = Rect.size self#window.Window.pos in *)
+(*         let x, y, w, h =  *)
+(*           Window.center_rect (BatInt.(Rect.place_in  *)
+(*                                  (Rect.rect (0,i*15) (w,13))  *)
+(*                                  self#window.Window.pos)) in *)
+(*         let len = float (text_width text) in *)
+(*         let ofs_x = (w -. len) /. 2. + x in *)
+(*         let ofs_x = float ident*30. + x+15. in *)
+(*         let ofs_y = (h -. 10.) /. 2. + y in *)
+(*         let ofs_y = y+15. in *)
+(*         draw_text (int_of_float ofs_x) (int_of_float ofs_y) text; *)
+(*         loop BatInt.(ident+1) BatInt.(i+1) children; *)
+(*         loop ident BatInt.(i+1+List.length children) xs *)
+(*       | [] -> () *)
+(*     in *)
+(*     loop 0 0 sample_tree *)
     
-end
+(* end *)
 open BatFloat
 
 let caption_painter text _ state rect =
@@ -397,7 +398,7 @@ class slider name left right step = object ( self : 'self )
 
   method caption value = 
     Printf.sprintf "%s: %2.2f" name value
-    
+
   (* method value = value *)
 end
 

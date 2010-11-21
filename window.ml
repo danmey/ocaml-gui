@@ -99,7 +99,7 @@ let find_window position =
 
 let add parent window =
   parent.children <-  parent.children @ [window];
-  window
+  ()
 
 let remove parent window =
   parent.children <- BatList.remove_if ((==) window) parent.children;

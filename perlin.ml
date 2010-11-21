@@ -187,10 +187,10 @@ let array_of_texture layer =
     for x = 0 to (texsize-1) do
       (* let r,g,b = layer x y in  *)
       let v = layer x y in
-      let r' = int_of_float (v *. 255.0) in
-      let g' = int_of_float (v *. 255.0) in
-      let b' = int_of_float (v *. 255.0) in 
-      array.(y*texsize+x) <- (v, v,v,1.)
+      (* let r' = int_of_float (v *. 255.0) in *)
+      (* let g' = int_of_float (v *. 255.0) in *)
+      (* let b' = int_of_float (v *. 255.0) in  *)
+      array.(y*texsize+x) <- (v, v, v, 1.)
     done
   done;
   array
@@ -203,19 +203,19 @@ let force l = for u = 0 to (texsize-1) do for v = 0 to (texsize-1) do ignore(l u
 end
 
 let displace v = int_of_float (10.*. sin (3.*.v)) land (texsize-1), int_of_float (10.*. cos (3.*.v)) land (texsize-1)
-let simple_generator () =
-  let clouds = Op.normalize texsize (Op.clouds 3 0.4) in 
-  let marble = Op.normalize texsize (Op.apply (fun u v -> cos (float_of_int u /. 10.0 +. 15.0 *. clouds u v))) in
-  let flakes = Op.hsv (fun u v -> 0.5 +. 0.5 *. clouds u v) (fun _ _ -> 1.0) (fun _ _ -> 1.0)  in
-  let terrain = Op.colorize [-0.01,(0.3,0.3,1.); 0.6,(0.1,0.8,0.1); 0.8, (0.8,0.8,0.3); 1.0, (1.,1.,1.);] marble in 
-  let height u v = let h = clouds u v in h,h,h in
-    Op.write "c.tga" texsize  (Op.gray3 (Op.emboss (-1.,0.) (Op.transform displace marble marble)));
-    (*    Op.write "flakes.tga" texsize flakes;
-	  Op.write "terrain.tga" texsize terrain;
-	  Op.write "height.tga" texsize height;
-    *)
-    ()
-;;
+(* let simple_generator () = *)
+(*   let clouds = Op.normalize texsize (Op.clouds 3 0.4) in  *)
+(*   let marble = Op.normalize texsize (Op.apply (fun u v -> cos (float_of_int u /. 10.0 +. 15.0 *. clouds u v))) in *)
+(*   let flakes = Op.hsv (fun u v -> 0.5 +. 0.5 *. clouds u v) (fun _ _ -> 1.0) (fun _ _ -> 1.0)  in *)
+(*   let terrain = Op.colorize [-0.01,(0.3,0.3,1.); 0.6,(0.1,0.8,0.1); 0.8, (0.8,0.8,0.3); 1.0, (1.,1.,1.);] marble in  *)
+(*   let height u v = let h = clouds u v in h,h,h in *)
+(*     Op.write "c.tga" texsize  (Op.gray3 (Op.emboss (-1.,0.) (Op.transform displace marble marble))); *)
+(*     (\*    Op.write "flakes.tga" texsize flakes; *)
+(* 	  Op.write "terrain.tga" texsize terrain; *)
+(* 	  Op.write "height.tga" texsize height; *)
+(*     *\) *)
+(*     () *)
+(* ;; *)
 
       
 
