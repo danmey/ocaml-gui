@@ -137,6 +137,14 @@ class canvas = object ( self : 'self )
     composite#add block;
     block#set_parent (self :> canvas)
     
+  method first =
+    match widgets with
+      | f::_ -> f
+
+  method second =
+    match widgets with
+      | _::s::_ -> s
+
   method dragged widget dpos = ()
   method clicked widget button pos = ()
 
@@ -383,6 +391,7 @@ class slider = object ( self : 'self )
   val mutable step = 0.01
   val mutable drag_value = 0.0
 
+  method value = string_of_float value
   method paint rect state = 
     caption_painter (Printf.sprintf "%2.2f" (drag_value +. value)) 0 rect state
 
@@ -468,7 +477,6 @@ class menu pos items = object ( self : 'self)
   self # invalidate (Rect.rect pos (!max_width+20, (List.length items) * 25 + 20))
     
   method clicked widget button pos =
-    print_endline "clicked";
     BatOption.may (fun parent -> parent # remove (self :> draggable)) parent;
     Event.run_events self # window 
       (Event.Custom ("menu_item", 

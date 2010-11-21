@@ -5,12 +5,16 @@ type mouse_button =
   | Right
   | Middle
 
+type value = 
+    Float of float
+
 type event =
   | MouseDown of mouse_button * Pos.t
   | MouseUp of mouse_button * Pos.t
   | MouseMotion of mouse_button * Pos.t
   | DoubleClick of mouse_button * Pos.t
   | Custom of string * Pos.t * string
+  | Parameters of (string * value) list
   | Drag of Pos.t
 
 type signal = { callback : (Window.window -> event -> bool); }

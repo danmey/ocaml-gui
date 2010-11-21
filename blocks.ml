@@ -98,9 +98,11 @@ class block_canvas = object ( self : 'self)
       | [] -> []
     in
     print_endline (String.concat "\n" (loop stack));
-    print_endline "";
-    method event wind = function
-      | Event.Custom ("menu_item", pos, what) -> 
+    print_endline ""
+
+    method event wind = 
+      function
+      | Event.Custom ("menu_item", _, what) -> 
           let b = (new block what) in
           self#add (b :> draggable);
           b#invalidate (Rect.rect last_mouse_pos (80, 20));
@@ -109,15 +111,14 @@ class block_canvas = object ( self : 'self)
 end
 
 open BatFloat
-class texture_preview = object ( self : 'self )
-  inherit graphics
+class texture_preview trigger = object ( self : 'self )
+  inherit graphics as super
   val mutable texid = None
   initializer
     window.Window.painter <- self#draw;
     texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 0.4))))
 
     method draw rect =
-      print_endline "draw";
       BatOption.may (fun texid ->
         GlTex.bind_texture ~target:`texture_2d texid;
         GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
@@ -136,4 +137,12 @@ class texture_preview = object ( self : 'self )
         GlDraw.ends ();
         Gl.disable `texture_2d;
       ) texid; ()
+
+    method event wind ev = 
+      print_endline "event:";
+      match ev with
+      | Event.Parameters ["octaves",Event.Float oct] when wind == trigger#window ->
+        texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 oct)))); true
+      | ev -> super # event wind ev
+    
 end

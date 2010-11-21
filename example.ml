@@ -55,11 +55,31 @@ class sphere_view xw yw zw ww = object ( self : 'self )
 end
 
 open BatInt
+class generate_button = object (self : 'self)
+  inherit button as super
+  method mouse_down a b = 
+    super # mouse_down a b;
+    BatOption.may (fun parent ->
+      (* print_endline "ala ma kota"; *)
+      (* Event.run_events self # window  *)
+      (*   (Event.Custom ("menu_item",  *)
+      (*                  (0,0),  *)
+      (*                "ala")); *)
+      print_endline (parent#first#name);
+      Event.run_events
+        self # window
+        (Event.Parameters ["octaves",  Event.Float (float_of_string parent#first#value)])
+    ) parent;
+    true
+
+end
+
 let _ =
   Gui.init 
     (fun () ->
       let g = new desktop in
-      let control_pane = (new texture_preview :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
+      let generate_button = new generate_button in
+      let control_pane = ((new texture_preview generate_button) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
       let edit_pane = new frame (fixed_vertical_layout 5 25) in
       let sx = (new slider) in
       let sy = (new slider) in
@@ -82,6 +102,8 @@ let _ =
       edit_pane#add (sy :> fixed);
       edit_pane#add (sz :> fixed);
       edit_pane#add (sw :> fixed);
+      edit_pane#add (generate_button :> fixed);
+
       let split_control = (new splitter control_pane (edit_pane :> draggable) Vertical) in
       let split_display = ((new splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal) :> graphical) in
       g#add split_display;
