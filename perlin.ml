@@ -84,14 +84,23 @@ let clouds octaves pers =
 let gray3 l = Layer.make (fun u v -> let p = l u v in (p,p,p))
 
 let wrap c = c land (texsize - 1)
-let transform f l1 l2 = Layer.make (fun x y -> let x', y' = f (l1 x y) in l2 (wrap (x'+x)) (wrap (y'+y)))
-let emboss (lx, ly) l = Layer.make (fun x y -> 
-				  (*    let lx, ly = float ( lx + x/2 - 128 ) /. 127.0, float ( ly + y/2 - 128 ) /. 127.0 in *)
-				    let (v1,v2) = (l (wrap(x+1)) y -. l (wrap (x-1)) y), (l x (wrap (y+1)) -. l x (wrap(y-1))) in
-				      let ll = 1.0 /. sqrt (v1 *. v1 +. v2 *. v2) in
-				      let (v1', v2') = v1 *. ll, v2 *. ll in
-				      let dot = v1' *. lx +. v2' *. ly in
-					 if dot > 0. then l x y *. dot else 0.)
+let transform f l1 l2 = Layer.make 
+  (fun x y -> 
+    let x', y' = f (l1 x y) in 
+    l2 (wrap (x'+x)) (wrap (y'+y)))
+
+let emboss (lx, ly) l = 
+  Layer.make 
+    (fun x y -> 
+  (*    let lx, ly = float ( lx + x/2 - 128 ) /. 127.0, float ( ly + y/2 - 128 ) /. 127.0 in *)
+      let v1,v2 = 
+        (l (wrap(x+1)) y -. l (wrap (x-1)) y), 
+        (l x (wrap (y+1)) -. l x (wrap(y-1))) 
+      in
+      let ll = 1.0 /. sqrt (v1 *. v1 +. v2 *. v2) in
+      let (v1', v2') = v1 *. ll, v2 *. ll in
+      let dot = v1' *. lx +. v2' *. ly in
+      if dot > 0. then l x y *. dot else 0.)
 
 
 let normalize w layer =

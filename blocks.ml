@@ -24,6 +24,7 @@ let block_cmp l r =
 (*     composite#add block; *)
 (*     block#set_canvas (self :> block_canvas) *)
 
+type tree = Tree of string * tree list
     
 (* end and block name = object ( self : 'self ) *)
 class block name = object ( self : 'self ) 
@@ -97,9 +98,11 @@ class block_canvas = object ( self : 'self)
       | x :: xs -> String.concat "\t" (List.map (fun rect -> (List.assoc rect widget_rects)#name) x) :: (loop xs)
       | [] -> []
     in
-    print_endline (String.concat "\n" (loop stack));
-    print_endline ""
-
+    let rec tree_loop parent_name = function
+      | x :: xs -> Children parent_name (List.map (fun rect -> (List.assoc rect widget_rects) # name) x) :: (tree_loop xs)
+      | [] -> []
+    in
+                     
     method event wind = 
       function
       | Event.Custom ("menu_item", _, what) -> 
@@ -147,18 +150,30 @@ class texture_preview trigger = object ( self : 'self )
     
 end
 
+type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
 type property_type = 
-  | Float of float * float * float
-  | Int of int * int * int
+  | Float of float property_value
+  | Int of int property_value
 
 type property = string * property_type
     
-(* class properties = object (self : 'self) *)
-(*   inherit frame (fixed_vertical_layout 5 25) *)
+class properties = object (self : 'self)
+  inherit frame (fixed_vertical_layout 5 25)
     
-(*   method set_properties = List.iter  *)
-(*     (function  *)
-(*       | (name, Float (start, left, right)) -> *)
-      
+  method delete_properties =
+    List.iter (fun widget -> Window.remove self # window widget # window) widgets;
+    widgets <- []
 
-(* end *)
+  method set_properties = List.iter
+    (function
+      | (name, Float { min; max; default; step }) -> 
+        self # add ((new slider name min max step) :> draggable)
+      | (name, Int { min; max; default; step }) -> 
+        self # add ((new int_slider name min max step) :> draggable))
+
+end
+
+let operators = ["clouds",
+                 ["octaves", Int { min = 1; max = 8; default = 3; step = 0.1 };
+                  "persistence", Float { min = 0.01; max = 2.0; default = 0.3; step = 0.01}]]
+                   

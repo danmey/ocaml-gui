@@ -80,11 +80,16 @@ let _ =
       let g = new desktop in
       let generate_button = new generate_button in
       let control_pane = ((new texture_preview generate_button) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
-      let edit_pane = new frame (fixed_vertical_layout 5 25) in
-      let sx = (new int_slider) in
-      let sy = (new slider) in
-      let sz = (new slider) in
-      let sw = (new slider) in
+      let edit_pane = new properties in
+      let open Blocks in
+      edit_pane # set_properties ["x",Float { min=(-2.); max=3.; default=1.; step = 0.1};
+                                  "y",Float { min=(-2.); max=3.; default=1.; step = 0.1};
+                                  "z",Int { min=(-2); max=3; default=1; step = 0.1};];
+      (* let sl () = new slider (-1.0) 1.0 0.01 in *)
+      (* let sx = (new int_slider 0 5 1.0) in *)
+      (* let sy = sl () in *)
+      (* let sz = sl () in *)
+      (* let sw = sl () in *)
       (* let graphical_pane = new sphere_view sx sy sz sw in *)
       (* let control_pane = new frame (fixed_vertical_layout 5 25) in *)
       let graphical_pane = new block_canvas in
@@ -98,10 +103,10 @@ let _ =
       (* graphical_pane#add b; *)
       (* b#invalidate (Rect.rect (400,200) (80,20)); *)
     
-      edit_pane#add (sx :> fixed);
-      edit_pane#add (sy :> fixed);
-      edit_pane#add (sz :> fixed);
-      edit_pane#add (sw :> fixed);
+      (* edit_pane#add (sx :> fixed); *)
+      (* edit_pane#add (sy :> fixed); *)
+      (* edit_pane#add (sz :> fixed); *)
+      (* edit_pane#add (sw :> fixed); *)
       edit_pane#add (generate_button :> fixed);
 
       let split_control = (new splitter control_pane (edit_pane :> draggable) Vertical) in

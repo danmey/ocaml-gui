@@ -364,22 +364,31 @@ end
 
 open BatInt
 
-class slider = object ( self : 'self )
+class slider name left right step = object ( self : 'self )
   inherit draggable_constrained Horizontal as super
   val mutable value = 0.
-  val mutable step = 0.01
+  val mutable step = step
   val mutable drag_value = 0.0
+  val left = left
+  val right = right
+  val name = name
 
   method value = string_of_float value
+  
+  method clamp v = 
+    let open BatFloat in
+    if v >= left then (if v <= right then v else right) else left
    
   method paint rect state = 
-    caption_painter (self#caption (drag_value +. value)) 0 rect state
+    caption_painter (self#caption (self # clamp (drag_value +. value))) 0 rect state
 
   method drag _ _ (dx,_) =
     drag_value <- step *. (float dx);
-    
+
+
   method drag_end =
-    value <- value +. drag_value;
+    let v = value +. drag_value in
+    value <- self # clamp v;
     drag_value <- 0.;
     self # slide_end value;
     true
@@ -387,7 +396,7 @@ class slider = object ( self : 'self )
   method slide_end value = ()
 
   method caption value = 
-    Printf.sprintf "%2.2f" value
+    Printf.sprintf "%s: %2.2f" name value
     
   (* method value = value *)
 end
@@ -400,8 +409,12 @@ let round v =
     snd (modf v)
 
 open BatInt
-class int_slider = object ( self : 'self )
-  inherit slider
+class int_slider name left right step = object ( self : 'self )
+  inherit slider 
+    name
+    (float_of_int left)
+    (float_of_int right)
+    step
 
   method drag_end =
     value <- round (value +. drag_value);
@@ -410,7 +423,7 @@ class int_slider = object ( self : 'self )
     true
 
   method caption value = 
-    Printf.sprintf "%d" (int_of_float (round value))
+    Printf.sprintf "%s: %d" name (int_of_float (round value))
 
   (* method value = value *)
 end
