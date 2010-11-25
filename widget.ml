@@ -123,7 +123,7 @@ class virtual [ 'a ] composite = object ( self : 'self )
 
   method add (widget : 'a) = 
     Window.add self#window (widget#window); 
-    widgets <- widgets @ [window, widget]
+    widgets <- widgets @ [widget#window, widget]
 
   method remove widget =
     Window.remove self # window (widget#window);
@@ -133,6 +133,7 @@ class virtual [ 'a ] composite = object ( self : 'self )
     self # iter (fun w -> self # remove w)
 
   method iter f = List.iter (fun (_, w) -> f w) widgets
+  method find h = List.assq h widgets
 end
 
 class [ 'a ] generic_canvas = object ( self : 'self )

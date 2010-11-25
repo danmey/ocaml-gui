@@ -25,9 +25,42 @@ let block_cmp l r =
 (*     block#set_canvas (self :> block_canvas) *)
 
 type tree = Tree of string * tree list
+
+type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
+type property_type = 
+  | Float of float property_value
+  | Int of int property_value
+
+type property = string * property_type
+
+(* class property_slider = object (self : 'self) *)
+(*   inherit slider *)
+    
+(*   (\* method slide_end value =  *\) *)
+(*   (\*   Custom ( *\) *)
+(* end     *)
+class properties props = object (self : 'self)
+  inherit frame (fixed_vertical_layout 5 25)
+    
+  initializer 
+    self # set_properties props;
+  method delete_properties =
+    List.iter (fun (_,widget) -> Window.remove self # window widget # window) widgets;
+    widgets <- []
+
+  method set_properties = List.iter
+    (function
+      | (name, Float { min; max; default; step }) -> 
+        self # add ((new slider name min max step) :> draggable)
+      | (name, Int { min; max; default; step }) -> 
+        self # add ((new int_slider name min max step) :> draggable))
+    
+  (* method property_changed widget value = *)
+  (*   () *)
+end
     
 (* end and block name = object ( self : 'self ) *)
-class block name properties = object ( self : 'self ) 
+class block name (properties : properties) = object ( self : 'self ) 
   inherit canvas as canvas
   inherit draggable as super
   val left_border = new draggable_constrained (HorizontalWith 10)
@@ -65,14 +98,15 @@ class block name properties = object ( self : 'self )
            (rect.Rect.x, rect.Rect.y)
            (grid (rect.Rect.w + dx), rect.Rect.h))
 
-  method mouse_up b p = 
-    super # mouse_up b p;
-    Event.run_events self # window 
-      (Event.Custom ("block_clicked", 
-                     p, 
+  method mouse_down b p =
+    Event.run_events self # window
+      (Event.Custom ("block_clicked",
+                     p,
                      ""));
-    true
+    super # mouse_down b p
 
+      
+  method get_properties = properties
         
 end
 
@@ -115,39 +149,6 @@ class texture_preview trigger = object ( self : 'self )
     
 end
 
-type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
-type property_type = 
-  | Float of float property_value
-  | Int of int property_value
-
-type property = string * property_type
-
-(* class property_slider = object (self : 'self) *)
-(*   inherit slider *)
-    
-(*   (\* method slide_end value =  *\) *)
-(*   (\*   Custom ( *\) *)
-(* end     *)
-class properties props = object (self : 'self)
-  inherit frame (fixed_vertical_layout 5 25)
-    
-  initializer 
-    self # set_properties props;
-  method delete_properties =
-    List.iter (fun (_,widget) -> Window.remove self # window widget # window) widgets;
-    widgets <- []
-
-  method set_properties = List.iter
-    (function
-      | (name, Float { min; max; default; step }) -> 
-        self # add ((new slider name min max step) :> draggable)
-      | (name, Int { min; max; default; step }) -> 
-        self # add ((new int_slider name min max step) :> draggable))
-    
-  (* method property_changed widget value = *)
-  (*   () *)
-end
-
 let property_pane = new frame fill_layout
 
 let properties = 
@@ -166,7 +167,7 @@ let properties =
     
 
 class block_canvas = object ( self : 'self)
-  inherit canvas
+  inherit canvas as canvas
   inherit fixed as super
   val mutable last_mouse_pos = (0,0)
   method mouse_down button pos =
@@ -218,6 +219,14 @@ class block_canvas = object ( self : 'self)
         b#invalidate (Rect.rect last_mouse_pos (80, 20));
         true
       | Event.Custom ("block_clicked", _, _) ->
+        (try
+        (let widget = self # find wind in
+        let block : block = Obj.magic widget in
+        let properties_pane = block # get_properties in
+        property_pane # remove_all;
+        property_pane # add (properties_pane :> draggable);
+        property_pane # revalidate)
+        with Not_found -> print_endline "ups";);
         true
       | ev -> super # event wind ev
 end
