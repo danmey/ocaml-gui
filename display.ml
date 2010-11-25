@@ -10,6 +10,6 @@ let display_size =
       (system_with_out "xrandr \\
                       | sed -n 's/^.*current \\([^ ]\\+\\) x \\([^ ]\\+\\), .*$/\\1 \\2/p'") " "
   in
-    Printf.printf "'%s' '%s'" w h;
+    (* Printf.printf "'%s' '%s'" w h; *)
     flush stdout;
     int_of_string w, int_of_string h - panel_height

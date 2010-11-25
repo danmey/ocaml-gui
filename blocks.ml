@@ -143,7 +143,6 @@ class texture_preview trigger = object ( self : 'self )
       ) texid; ()
 
     method event wind ev = 
-      print_endline "event:";
       match ev with
       | Event.Parameters ["octaves",Event.Float oct] when wind == trigger#window ->
         texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 oct)))); true
