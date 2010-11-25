@@ -127,8 +127,7 @@ let render_bitmap_string x y font string =
   GlMat.mode `modelview;
   GlMat.push ();
   GlMat.load_identity ();
-  (* GlMat.scale ~x:1. ~y:(-1.) ~z:1.; *)
-  (* GlMat.translate ~x:0. ~y:(-.top) ~z:0.; *)
+  GlDraw.color (0., 0., 0.);
   GlPix.raster_pos ~x ~y:(top-.y-.10.) ~z:0. ();
   for i = 0 to String.length string - 1 do
     Glut.bitmapCharacter ~font ~c:(int_of_char (string.[i]))

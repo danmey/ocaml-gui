@@ -80,11 +80,7 @@ let _ =
       let g = new desktop in
       let generate_button = new generate_button in
       let control_pane = ((new texture_preview generate_button) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
-      let edit_pane = new properties in
       let open Blocks in
-      edit_pane # set_properties ["x",Float { min=(-2.); max=3.; default=1.; step = 0.1};
-                                  "y",Float { min=(-2.); max=3.; default=1.; step = 0.1};
-                                  "z",Int { min=(-2); max=3; default=1; step = 0.1};];
       (* let sl () = new slider (-1.0) 1.0 0.01 in *)
       (* let sx = (new int_slider 0 5 1.0) in *)
       (* let sy = sl () in *)
@@ -107,9 +103,11 @@ let _ =
       (* edit_pane#add (sy :> fixed); *)
       (* edit_pane#add (sz :> fixed); *)
       (* edit_pane#add (sw :> fixed); *)
+      let (_, edit_properties) :: _ = properties in
+      let edit_pane = new properties edit_properties in
       edit_pane#add (generate_button :> fixed);
-
-      let split_control = (new splitter control_pane (edit_pane :> draggable) Vertical) in
+      property_pane # add (edit_pane  :> fixed);
+      let split_control = (new splitter control_pane (property_pane :> draggable) Vertical) in
       let split_display = ((new splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal) :> graphical) in
       g#add split_display;
       let w,h = Display.display_size in

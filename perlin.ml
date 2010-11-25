@@ -44,9 +44,9 @@ let displace v = int_of_float (10.*. sin (3.*.v)) land (texsize-1), int_of_float
 (* simple_generator();;  *)
 (* Unix.system "feh c.tga" *)
 
-let barsH fr = Op.apply (fun u v -> 0.5 +. 0.5 *. cos ((float u)/.fr));;
-let barsV fr = Op.apply (fun u v -> 0.5 +. 0.5 *. cos ((float v)/.fr));;
-(*t plasma x y = Op.(+) (barsH x) (barsV y);;*)
-let plasma x y = Op.normalize texsize (Op.(+) (barsH x) (barsV y));;
-let plasma5 = plasma 5. 5.;;
-(*Op.write "c.tga" texsize (Op.compose3 plasma5 plasma5 plasma5);Unix.system "feh c.tga";;*)
+(* let barsH fr = Op.apply (fun u v -> 0.5 +. 0.5 *. cos ((float u)/.fr));; *)
+(* let barsV fr = Op.apply (fun u v -> 0.5 +. 0.5 *. cos ((float v)/.fr));; *)
+(* (\*t plasma x y = Op.(+) (barsH x) (barsV y);;*\) *)
+(* let plasma x y = Op.normalize texsize (Op.(+) (barsH x) (barsV y));; *)
+(* let plasma5 = plasma 5. 5.;; *)
+(* (\*Op.write "c.tga" texsize (Op.compose3 plasma5 plasma5 plasma5);Unix.system "feh c.tga";;*\) *)

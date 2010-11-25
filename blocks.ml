@@ -27,12 +27,13 @@ let block_cmp l r =
 type tree = Tree of string * tree list
     
 (* end and block name = object ( self : 'self ) *)
-class block name = object ( self : 'self ) 
+class block name properties = object ( self : 'self ) 
   inherit canvas as canvas
   inherit draggable as super
   val left_border = new draggable_constrained (HorizontalWith 10)
   val right_border = new draggable_constrained (HorizontalWith 10)
   val name = name
+  val properties = properties
   initializer
     canvas#add left_border;
     canvas#add right_border
@@ -63,7 +64,106 @@ class block name = object ( self : 'self )
         (Rect.rect
            (rect.Rect.x, rect.Rect.y)
            (grid (rect.Rect.w + dx), rect.Rect.h))
+
+  method mouse_up b p = 
+    super # mouse_up b p;
+    Event.run_events self # window 
+      (Event.Custom ("block_clicked", 
+                     p, 
+                     ""));
+    true
+
+        
 end
+
+
+
+
+open BatFloat
+class texture_preview trigger = object ( self : 'self )
+  inherit graphics as super
+  val mutable texid = None
+  initializer
+    window.Window.painter <- self#draw;
+    (* texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 0.4)))) *)
+
+    method draw rect =
+      BatOption.may (fun texid ->
+        GlTex.bind_texture ~target:`texture_2d texid;
+        GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
+        GlTex.parameter ~target:`texture_2d (`min_filter `nearest); 
+        Gl.enable `texture_2d;
+        let x, y, w, h = Window.center_rect rect in
+        GlDraw.begins `quads;
+        GlTex.coord2 (0.0, 0.0);
+        GlDraw.vertex ~x ~y ();
+        GlTex.coord2 (1.0, 0.0);
+        GlDraw.vertex ~x:(x + w) ~y ();
+        GlTex.coord2 (1.0, 1.0);
+        GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
+        GlTex.coord2 (0.0, 1.0);
+        GlDraw.vertex ~x ~y:(y + h) ();
+        GlDraw.ends ();
+        Gl.disable `texture_2d;
+      ) texid; ()
+
+    method event wind ev = 
+      match ev with
+      (* | Event.Parameters ["octaves",Event.Float oct] when wind == trigger#window -> *)
+      (*   texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 oct)))); true *)
+      | ev -> super # event wind ev
+    
+end
+
+type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
+type property_type = 
+  | Float of float property_value
+  | Int of int property_value
+
+type property = string * property_type
+
+(* class property_slider = object (self : 'self) *)
+(*   inherit slider *)
+    
+(*   (\* method slide_end value =  *\) *)
+(*   (\*   Custom ( *\) *)
+(* end     *)
+class properties props = object (self : 'self)
+  inherit frame (fixed_vertical_layout 5 25)
+    
+  initializer 
+    self # set_properties props;
+  method delete_properties =
+    List.iter (fun (_,widget) -> Window.remove self # window widget # window) widgets;
+    widgets <- []
+
+  method set_properties = List.iter
+    (function
+      | (name, Float { min; max; default; step }) -> 
+        self # add ((new slider name min max step) :> draggable)
+      | (name, Int { min; max; default; step }) -> 
+        self # add ((new int_slider name min max step) :> draggable))
+    
+  (* method property_changed widget value = *)
+  (*   () *)
+end
+
+let property_pane = new frame fill_layout
+
+let properties = 
+  ["perlin", 
+   ["persistence", Float { min = 0.; max = 3.; default = 0.25; step = 0.01 };
+    "octaves", Int { min=1; max=8; default=1; step = 0.2 }; ];
+
+   "add",  
+   [];
+
+   "light", 
+   ["lx", Float { min = 0.; max = 1.; default = 0.; step = 0.01 };
+    "ly", Float { min = 0.; max = 1.; default = 1.; step = 0.01 };
+    "ldx", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };
+    "ldy", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };]]
+    
 
 class block_canvas = object ( self : 'self)
   inherit canvas
@@ -73,7 +173,8 @@ class block_canvas = object ( self : 'self)
     match button with
       | Event.Right ->
         last_mouse_pos <- pos;
-        let m = new menu pos  ["perlin"; "add"; "clamp";] in
+        let names, _ = List.split properties in
+        let m = new menu pos names in
         self # add (m :> draggable);
         true
       | Event.Middle ->
@@ -103,85 +204,20 @@ class block_canvas = object ( self : 'self)
     (*   | x :: xs -> Children parent_name (List.map (fun rect -> (List.assoc rect widget_rects) # name) x) :: (tree_loop xs) *)
     (*   | [] -> [] *)
     (* in *)
-                     
+    
     method event wind = 
       function
       | Event.Custom ("menu_item", _, what) -> 
-          let b = (new block what) in
-          self#add (b :> draggable);
-          b#invalidate (Rect.rect last_mouse_pos (80, 20));
+        let properties = List.assq what properties in
+        let properties_pane = new properties properties in
+        property_pane # remove_all;
+        property_pane # add (properties_pane :> draggable);
+        property_pane # revalidate;
+        let b = new block what properties_pane in
+        self#add (b :> draggable);
+        b#invalidate (Rect.rect last_mouse_pos (80, 20));
+        true
+      | Event.Custom ("block_clicked", _, _) ->
         true
       | ev -> super # event wind ev
 end
-
-open BatFloat
-class texture_preview trigger = object ( self : 'self )
-  inherit graphics as super
-  val mutable texid = None
-  initializer
-    window.Window.painter <- self#draw;
-    texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 0.4))))
-
-    method draw rect =
-      BatOption.may (fun texid ->
-        GlTex.bind_texture ~target:`texture_2d texid;
-        GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
-        GlTex.parameter ~target:`texture_2d (`min_filter `nearest); 
-        Gl.enable `texture_2d;
-        let x, y, w, h = Window.center_rect rect in
-        GlDraw.begins `quads;
-        GlTex.coord2 (0.0, 0.0);
-        GlDraw.vertex ~x ~y ();
-        GlTex.coord2 (1.0, 0.0);
-        GlDraw.vertex ~x:(x + w) ~y ();
-        GlTex.coord2 (1.0, 1.0);
-        GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
-        GlTex.coord2 (0.0, 1.0);
-        GlDraw.vertex ~x ~y:(y + h) ();
-        GlDraw.ends ();
-        Gl.disable `texture_2d;
-      ) texid; ()
-
-    method event wind ev = 
-      match ev with
-      | Event.Parameters ["octaves",Event.Float oct] when wind == trigger#window ->
-        texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 oct)))); true
-      | ev -> super # event wind ev
-    
-end
-
-type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
-type property_type = 
-  | Float of float property_value
-  | Int of int property_value
-
-type property = string * property_type
-
-(* class property_slider = object (self : 'self) *)
-(*   inherit slider *)
-    
-(*   (\* method slide_end value =  *\) *)
-(*   (\*   Custom ( *\) *)
-(* end     *)
-class properties = object (self : 'self)
-  inherit frame (fixed_vertical_layout 5 25)
-    
-  method delete_properties =
-    List.iter (fun widget -> Window.remove self # window widget # window) widgets;
-    widgets <- []
-
-  method set_properties = List.iter
-    (function
-      | (name, Float { min; max; default; step }) -> 
-        self # add ((new slider name min max step) :> draggable)
-      | (name, Int { min; max; default; step }) -> 
-        self # add ((new int_slider name min max step) :> draggable))
-    
-  (* method property_changed widget value = *)
-  (*   () *)
-end
-
-let operators = ["clouds",
-                 ["octaves", Int { min = 1; max = 8; default = 3; step = 0.1 };
-                  "persistence", Float { min = 0.01; max = 2.0; default = 0.3; step = 0.01}]]
-                   

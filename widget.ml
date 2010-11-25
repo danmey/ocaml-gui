@@ -93,6 +93,8 @@ class graphical = object ( self : 'self )
   val mutable state = Normal
   initializer window.Window.painter <- (fun rect -> self#paint state rect)
   method invalidate rect = window.Window.pos <- rect
+  method revalidate = self # invalidate window.Window.pos
+
   method paint = button_painter
 end
 
@@ -117,37 +119,42 @@ end
 
 class virtual [ 'a ] composite = object ( self : 'self )
   inherit widget as super
-  val mutable widgets : 'a list = []
+  val mutable widgets : (Window.window * 'a) list = []
 
   method add (widget : 'a) = 
     Window.add self#window (widget#window); 
-    widgets <- widgets @ [widget]
+    widgets <- widgets @ [window, widget]
 
   method remove widget =
     Window.remove self # window (widget#window);
-    widgets <- BatList.remove_if ((==) widget) widgets
+    widgets <- BatList.remove_if (fun w -> widget == snd w) widgets
 
-  method iter f = List.iter f widgets
+  method remove_all =
+    self # iter (fun w -> self # remove w)
+
+  method iter f = List.iter (fun (_, w) -> f w) widgets
 end
 
-class canvas = object ( self : 'self )
-  inherit [ draggable ] composite as composite
+class [ 'a ] generic_canvas = object ( self : 'self )
+  inherit [ 'a ] composite as composite
   inherit graphical as super
   method add block = 
     composite#add block;
-    block#set_parent (self :> canvas)
+    block#set_parent (self :> 'a generic_canvas)
     
   method first =
     match widgets with
-      | f::_ -> f
+      | (_,f)::_ -> f
 
   method second =
     match widgets with
-      | _::s::_ -> s
+      | _::(_,s)::_ -> s
 
   method dragged widget dpos = ()
   method clicked widget button pos = ()
 
+end and canvas = object ( self : 'self )
+  inherit [ draggable ] generic_canvas
 end and draggable = object ( self : 'self )
   inherit interactive as super
   val mutable dragged_pos = (0,0)
@@ -220,7 +227,8 @@ end
 class splitter first second constr1 = object ( self : 'self )
   inherit draggable
   inherit canvas as super
- 
+    
+  val mutable formed = false
   val mutable constr = constr1
   val split_widget = new draggable_constrained constr1
   val first = first
@@ -251,23 +259,24 @@ class splitter first second constr1 = object ( self : 'self )
           | _ -> failwith "splitter.dragged: Not supported"
         
   method invalidate rect =
-        (match constr with
-          | Horizontal ->
-            super#invalidate rect;
-            let p,_ = Rect.pos window.Window.pos in
-            let w,h = Rect.size window.Window.pos in
-            let o = p + w / 2 - 10 in
-            split_widget#invalidate (Rect.rect (o,0) (20,h));
-            first#invalidate (Rect.rect (0,0) (o,h));
-            second#invalidate (Rect.rect (o+20,0) (w,h))
-          | Vertical ->
-            super#invalidate rect;
-            let _,p = Rect.pos window.Window.pos in
-            let w,h = Rect.size window.Window.pos in
-            let o = p + h / 2 - 10 in
-            split_widget#invalidate (Rect.rect (0,o) (w, 20));
-            first#invalidate (Rect.rect (0,0) (w, o));
-            second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
+    (match constr with
+      | Horizontal ->
+        super#invalidate rect;
+        let p,_ = Rect.pos window.Window.pos in
+        let w,h = Rect.size window.Window.pos in
+        let o = p + w / 2 - 10 in
+        split_widget#invalidate (Rect.rect (o,0) (20,h));
+        first#invalidate (Rect.rect (0,0) (o,h));
+        second#invalidate (Rect.rect (o+20,0) (w,h))
+      | Vertical ->
+        super#invalidate rect;
+        let _,p = Rect.pos window.Window.pos in
+        let w,h = Rect.size window.Window.pos in
+        let o = p + h / 2 - 10 in
+        split_widget#invalidate (Rect.rect (0,o) (w, 20));
+        first#invalidate (Rect.rect (0,0) (w, o));
+        second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
+          
 end
 
 
@@ -457,13 +466,15 @@ let fixed_horizontal_layout spacing width parent_rect d c i =
     let ofs = (i * (width + 2 * spacing)) + spacing in
     Rect.rect (ofs, spacing) (width, h-spacing*2)
 
+let fill_layout parent_rect _ _ _ = Rect.rect (0,0) (Rect.size parent_rect)
+
 class frame layout = object ( self : 'self )
   inherit canvas as super
   inherit fixed
   method invalidate rect =
     super#invalidate rect;
     let count = List.length window.Window.children in
-    BatList.iteri (fun i w ->
+    BatList.iteri (fun i (_,w) ->
       let local_rect = layout (window.Window.pos) (w#window.Window.pos) count i in
       w # invalidate local_rect) widgets
 end
