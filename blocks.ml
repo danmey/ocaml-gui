@@ -1,7 +1,7 @@
 open Widget
 open Draw
 open Window
-
+open GL
 type 'a block_tree = Block of 'a * 'a list
 type stickiness = TopBottom | LeftRight
 
@@ -117,18 +117,18 @@ class block name (properties : properties) = object ( self : 'self )
     let ofs_y = (h - 10.) / 2. + y in
     draw_text (int_of_float ofs_x) (int_of_float ofs_y) self # name;
     if focus then
-      (GlDraw.begins `lines;
+      (glBegin GL_LINES;
        c 255 132 132;
-       GlDraw.vertex ~x:(x + 1.) ~y:(y + 1.) ();
-       GlDraw.vertex ~x:(x + w-2.) ~y:(y + 1.) ();
-       GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
-       GlDraw.vertex ~x:(x +1.) ~y:(y + h-2.) ();
+       glVertex3 ~x:(x + 1.) ~y:(y + 1.) ~z:0.;
+       glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.;
+       glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.;
+       glVertex3 ~x:(x +1.) ~y:(y + h-2.) ~z:0.;
        
-       GlDraw.vertex ~x:(x + 0.) ~y:(y + 0.) ();
-       GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
-       GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
-       GlDraw.vertex ~x:(x +0.) ~y:(y + h-1.) ();
-       GlDraw.ends ())
+       glVertex3 ~x:(x + 0.) ~y:(y + 0.) ~z:0.;
+       glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
+       glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+       glVertex3 ~x:(x +0.) ~y:(y + h-1.) ~z:0.;
+       glEnd ())
 
   method get_properties = properties
         
@@ -147,24 +147,24 @@ class texture_preview trigger = object ( self : 'self )
     (*                  (Texgen.array_of_texture .(TexGen.clouds 3 0.4))) *)
 
     method draw rect =
-      BatOption.may (fun texid ->
-        GlTex.bind_texture ~target:`texture_2d texid;
-        GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
-        GlTex.parameter ~target:`texture_2d (`min_filter `nearest); 
-        Gl.enable `texture_2d;
-        let x, y, w, h = Window.center_rect rect in
-        GlDraw.begins `quads;
-        GlTex.coord2 (0.0, 0.0);
-        GlDraw.vertex ~x ~y ();
-        GlTex.coord2 (1.0, 0.0);
-        GlDraw.vertex ~x:(x + w) ~y ();
-        GlTex.coord2 (1.0, 1.0);
-        GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
-        GlTex.coord2 (0.0, 1.0);
-        GlDraw.vertex ~x ~y:(y + h) ();
-        GlDraw.ends ();
-        Gl.disable `texture_2d;
-      ) texid; ()
+      (* BatOption.may (fun texid -> *)
+      (*   GlTex.bind_texture ~target:GL_TEXTURE_2D texid; *)
+      (*   glTexParameter ~target:GL_TEXTURE_2D (`mag_filter `nearest); *)
+      (*   glTexParameter ~target:GL_TEXTURE_2D (`min_filter `nearest);  *)
+      (*   glEnable GL_TEXTURE_2D; *)
+      (*   let x, y, w, h = Window.center_rect rect in *)
+      (*   glBegin GL_QUADS; *)
+      (*   glTexCoord2 (0.0, 0.0); *)
+      (*   glVertex3 ~x ~y (); *)
+      (*   glTexCoord2 (1.0, 0.0); *)
+      (*   glVertex3 ~x:(x + w) ~y (); *)
+      (*   glTexCoord2 (1.0, 1.0); *)
+      (*   glVertex3 ~x:(x + w) ~y:(y + h) (); *)
+      (*   glTexCoord2 (0.0, 1.0); *)
+      (*   glVertex3 ~x ~y:(y + h) (); *)
+      (*   glEnd (); *)
+      (*   Gl.disable GL_TEXTURE_2D; *)
+      (* ) texid; *) ()
 
     method event wind ev = 
       match ev with

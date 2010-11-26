@@ -30,59 +30,59 @@ let font_size = 11
    - left, right, top, bottom edge
 
 *)
-
-let mouse_state = ref (Glut.LEFT_BUTTON, Glut.UP)
+open GL
+open Glu
+let mouse_state = ref (Glut.GLUT_LEFT_BUTTON, Glut.GLUT_UP)
 
 open BatFloat
 let with_view f =
-  GlMat.mode `projection;
-  GlMat.push();
-  GlMat.load_identity ();
+  glMatrixMode GL_PROJECTION;
+  glPushMatrix();
+  glLoadIdentity ();
   let w,h = Display. display_size in
-    GlDraw.viewport ~x:0 ~y:0 ~w:w ~h:h;
-    GlMat.ortho ~x:(0.,float w) ~y:(float h,0.0) ~z:(0.0,1.);
+    glViewport ~x:0 ~y:0 ~width:w ~height:h;
+    glOrtho ~left:0. ~right:(float w) ~bottom:(float h) ~top:0.0 ~near:0.0 ~far:1.;
     let res = f() in
-    GlMat.mode `projection;
-    GlMat.pop();
-    GlMat.mode `modelview;
+    glMatrixMode GL_PROJECTION;
+    glPopMatrix();
+    glMatrixMode GL_MODELVIEW;
     res
 
 let display () =
-  Gl.disable `scissor_test;
-  GlClear.color (214./255., 214./.255., 206./.255.);
-  GlClear.clear [ `color; `depth];
-  GluMat.perspective ~fovy:60. ~aspect:1.6 ~z:(0.1,100.0);
-  Gl.disable `depth_test ;
-  Gl.disable `cull_face ;
-  GlMat.mode `projection;
-  GlMat.load_identity ();
-  GlMat.mode `modelview;
-  GlMat.load_identity ();
+  glDisable GL_SCISSOR_TEST;
+  glClearColor ~r:(214./255.) ~g:(214./.255.) ~b:(206./.255.) ~a:0.0;
+  glClear [ GL_COLOR_BUFFER_BIT; GL_DEPTH_BUFFER_BIT];
+  gluPerspective ~fovy:60. ~aspect:1.6 ~zNear:0.1 ~zFar:100.;
+  glDisable GL_DEPTH_TEST ;
+  glDisable GL_CULL_FACE ;
+  glMatrixMode GL_PROJECTION;
+  glLoadIdentity ();
+  glMatrixMode GL_MODELVIEW;
+  glLoadIdentity ();
   with_view (fun () -> Window.draw_desktop ());
   let w,h = Display. display_size in
-  Glut.swapBuffers ();
+  Glut.glutSwapBuffers ();
   ignore(Unix.select [] [] [] 0.001)
 ;;
 
 let on_mouse_motion ~x ~y = Event.mouse_motion_handler ~x ~y
 
 let on_mouse  ~button ~state ~x ~y =
-  print_endline (Glut.string_of_button_state state);
   flush stdout;
   mouse_state := (button, state);
   Event.mouse_handler ~button ~state ~x ~y
 
 
 let init build =
-  ignore( Glut.init Sys.argv );
-  Glut.initDisplayMode ~double_buffer:true ~depth:true ();
-  ignore (Glut.createWindow ~title:"OpenGL Demo");
+  ignore( Glut.glutInit Sys.argv );
+  Glut.glutInitDisplayMode [Glut.GLUT_RGBA; Glut.GLUT_DEPTH; Glut.GLUT_DOUBLE];
+  ignore (Glut.glutCreateWindow ~title:"OpenGL Demo");
   build ();
   Window.shelf (Rect.rect (0,0) Display.display_size);
-  Glut.displayFunc ~cb:display;
-  Glut.idleFunc ~cb:(Some Glut.postRedisplay);
-  Glut.motionFunc ~cb:on_mouse_motion;
-  Glut.mouseFunc ~cb:on_mouse;
-  Glut.mainLoop ()
+  Glut.glutDisplayFunc display;
+  Glut.glutIdleFunc Glut.glutPostRedisplay;
+  Glut.glutMotionFunc on_mouse_motion;
+  Glut.glutMouseFunc on_mouse;
+  Glut.glutMainLoop ()
 ;;
 

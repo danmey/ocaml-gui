@@ -6,54 +6,54 @@ open Blocks
 let id a = a
 let center_rect = Rect.lift4 id
 open BatFloat
-class sphere_view xw yw zw ww = object ( self : 'self )
-  inherit graphics
-    method draw rect =
-    (*   Gl.disable `scissor_test; *)
-      Gl.enable `depth_test ;
-    (*   Gl.disable `cull_face ; *)
-      let x,y,w,h = center_rect rect in
-      (* print_endline (string_of_float (float w/. float h)); *)
-      GlDraw.viewport ~x ~y ~w ~h;
-      GlMat.mode `projection;
-      GlMat.push ();
-      GlMat.load_identity ();
-      GluMat.perspective ~fovy:40. ~aspect:(float w/. float h) ~z:(0.1,100.0);
-      GlMat.mode `modelview;
-      (* Gl.enable `light0; *)
-      (* Gl.enable `lighting; *)
+(* class sphere_view xw yw zw ww = object ( self : 'self ) *)
+(*   inherit graphics *)
+(*     method draw rect = *)
+(*     (\*   Gl.disable `scissor_test; *\) *)
+(*       Gl.enable `depth_test ; *)
+(*     (\*   Gl.disable `cull_face ; *\) *)
+(*       let x,y,w,h = center_rect rect in *)
+(*       (\* print_endline (string_of_float (float w/. float h)); *\) *)
+(*       GlDraw.viewport ~x ~y ~w ~h; *)
+(*       GlMat.mode `projection; *)
+(*       GlMat.push (); *)
+(*       GlMat.load_identity (); *)
+(*       GluMat.perspective ~fovy:40. ~aspect:(float w/. float h) ~z:(0.1,100.0); *)
+(*       GlMat.mode `modelview; *)
+(*       (\* Gl.enable `light0; *\) *)
+(*       (\* Gl.enable `lighting; *\) *)
 
-    (*   GlMat.push (); *)
-      GlMat.load_identity ();
-      let x, y, z,w = xw#value, yw#value, zw#value, ww#value in
-      let h = w in
+(*     (\*   GlMat.push (); *\) *)
+(*       GlMat.load_identity (); *)
+(*       let x, y, z,w = xw#value, yw#value, zw#value, ww#value in *)
+(*       let h = w in *)
       
-      GluMat.look_at
-        ~eye:(x, y, z)
-        ~center:(0.0, 0.0, 0.0)
-        ~up: (0.0, 1.0, 0.);
-      (* GlDraw.begins `quads; *)
-      (* GlDraw.color (0.,1.,0.); *)
-      (* GlDraw.vertex ~x ~y (); *)
-      (* GlDraw.vertex ~x:(x + w) ~y (); *)
-      (* GlDraw.vertex ~x:(x + w) ~y:(y + h) (); *)
-      (* GlDraw.vertex ~x ~y:(y + h) (); *)
-      (* GlDraw.vertex ~x:0. ~y:0. ~z:1.1; *)
-      (* GlDraw.vertex ~x:10. ~y:0. ~z:1.1; *)
-      (* GlDraw.vertex ~x:10. ~y:10. ~z:1.1; *)
-      (* GlDraw.vertex ~x:0. ~y:10. ~z:1.1; *)
-      (* GlDraw.ends (); *)
-      Glut.solidCube ~size:1.0; 
+(*       GluMat.look_at *)
+(*         ~eye:(x, y, z) *)
+(*         ~center:(0.0, 0.0, 0.0) *)
+(*         ~up: (0.0, 1.0, 0.); *)
+(*       (\* GlDraw.begins `quads; *\) *)
+(*       (\* GlDraw.color (0.,1.,0.); *\) *)
+(*       (\* GlDraw.vertex ~x ~y (); *\) *)
+(*       (\* GlDraw.vertex ~x:(x + w) ~y (); *\) *)
+(*       (\* GlDraw.vertex ~x:(x + w) ~y:(y + h) (); *\) *)
+(*       (\* GlDraw.vertex ~x ~y:(y + h) (); *\) *)
+(*       (\* GlDraw.vertex ~x:0. ~y:0. ~z:1.1; *\) *)
+(*       (\* GlDraw.vertex ~x:10. ~y:0. ~z:1.1; *\) *)
+(*       (\* GlDraw.vertex ~x:10. ~y:10. ~z:1.1; *\) *)
+(*       (\* GlDraw.vertex ~x:0. ~y:10. ~z:1.1; *\) *)
+(*       (\* GlDraw.ends (); *\) *)
+(*       Glut.glutSolidCube ~size:1.0;  *)
       
-      GlMat.mode `projection;
-      GlMat.pop ();
-    (*   GlMat.mode `modelview; *)
-    (*   GlMat.pop (); *)
-      let w,h = Display. display_size in
-      GlDraw.viewport ~x:0 ~y:0 ~w ~h;
-    (*   Gl.enable `scissor_test *)
-      ()
-end
+(*       GlMat.mode `projection; *)
+(*       GlMat.pop (); *)
+(*     (\*   GlMat.mode `modelview; *\) *)
+(*     (\*   GlMat.pop (); *\) *)
+(*       let w,h = Display. display_size in *)
+(*       GlDraw.viewport ~x:0 ~y:0 ~w ~h; *)
+(*     (\*   Gl.enable `scissor_test *\) *)
+(*       () *)
+(* end *)
 
 open BatInt
 class generate_button = object (self : 'self)

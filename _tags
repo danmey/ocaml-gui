@@ -1,2 +1,2 @@
-<*.*>: gcc, use_util, pkg_batteries, pkg_lablGL, pkg_lablGL.glut
+<*.*>: gcc, use_util, pkg_batteries
 

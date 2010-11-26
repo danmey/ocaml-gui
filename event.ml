@@ -69,14 +69,14 @@ let run_events from_window event =
 
 let mouse_handler ~button ~state ~x ~y = 
   let b = match button with
-    | Glut.LEFT_BUTTON -> Left
-    | Glut.MIDDLE_BUTTON -> Middle
-    | Glut.RIGHT_BUTTON -> Right
+    | Glut.GLUT_LEFT_BUTTON -> Left
+    | Glut.GLUT_MIDDLE_BUTTON -> Middle
+    | Glut.GLUT_RIGHT_BUTTON -> Right
     | _ -> Middle
   in
   run_events Window.desktop
   (match state with
-    | Glut.DOWN -> MouseDown (b, (x, y))
-    | Glut.UP -> MouseUp (b, (x, y)))
+    | Glut.GLUT_DOWN -> MouseDown (b, (x, y))
+    | Glut.GLUT_UP -> MouseUp (b, (x, y)))
 
 let mouse_motion_handler ~x ~y = run_events Window.desktop (MouseMotion (Left, (x,y)))

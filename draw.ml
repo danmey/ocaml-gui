@@ -1,3 +1,5 @@
+(* open LablGL *)
+open GL
 
 module Pos = struct
   type t = (int*int)
@@ -53,92 +55,92 @@ module Draw = struct
     | Rect (r,_) -> Rect.string_of_rect r
     | Custom _ -> ""
 
-let triangulate lst =
-  let els q = let lines,quads = ref 0,ref 0 in
-    List.iter (function | Line _ -> lines := !lines + 1 | Rect _ -> quads := !quads+1 | _ -> ()) q;
-    !lines,!quads in
-  let vc,cc = let l,q = els lst in l*2*4 + q*4*2*4,((q*4)+l)*4*4 in
-  let vertices = Raw.create_static `float vc in
-  let colors = Raw.create_static `float cc in
-  let of_dec x = float_of_int(x) +. 0.5 in
-  let store_vtx i (x,y) (r,g,b,a) =
-    Raw.set_float vertices ~pos:(i+0) x;
-    Raw.set_float vertices ~pos:(i+1) y;
-    Raw.set_float colors   ~pos:(2*i+0) r;
-    Raw.set_float colors   ~pos:(2*i+1) g;
-    Raw.set_float colors   ~pos:(2*i+2) b;
-    Raw.set_float colors   ~pos:(2*i+3) a;
-    i+2 in
-  let store_line i (x1,y1) (x2,y2) color =
-    let dx = float (x2-x1) in
-    let dy = float (y2-y1) in
-    let len dx dy = sqrt ((dx*.dx)+.(dy*.dy)) in
-    let l = len dx dy in
-    let vx = -0.5*.dx /. l in
-    let vy =  0.5*.dy /. l in
-    let c1 = of_dec(x1)-.vy, of_dec(y1)-.vx in
-    let c2 = of_dec(x2)-.vy, of_dec(y2)-.vx in
-    let c3 = of_dec(x2)+.vy, of_dec(y2)+.vx in
-    let c4 = of_dec(x1)+.vy, of_dec(y1)+.vx in
-    let i = store_vtx i c1 color in
-    let i = store_vtx i c2 color in
-    let i = store_vtx i c3 color in
-    let i = store_vtx i c4 color in
-      i in
-  let store_rect i ((x1,y1),(x2,y2)) color =
-    let i = store_line i (x1,y1) (x2,y1) color in
-    let i = store_line i (x2,y1) (x2,y2) color in
-    let i = store_line i (x2,y2) (x1,y2) color in
-    let i = store_line i (x1,y2) (x1,y1) color in
-      i
-  in
-  let i = ref 0 in
-    List.iter (function
-		  | Rect (r,c) ->             i:= store_rect !i (Rect.abs_dim r) c
-		  | Line ((x1,y1,x2,y2),c) -> i:= store_line !i (x1,y1) (x2,y2) c
-		  | Custom _ -> ()
-	       )
+(* let triangulate lst = *)
+(*   let els q = let lines,quads = ref 0,ref 0 in *)
+(*     List.iter (function | Line _ -> lines := !lines + 1 | Rect _ -> quads := !quads+1 | _ -> ()) q; *)
+(*     !lines,!quads in *)
+(*   let vc,cc = let l,q = els lst in l*2*4 + q*4*2*4,((q*4)+l)*4*4 in *)
+(*   let vertices = Bigarray.Array1.create_static float32 vc in *)
+(*   let colors = Bigarray.Array1.create_static float32 cc in *)
+(*   let of_dec x = float_of_int(x) +. 0.5 in *)
+(*   let store_vtx i (x,y) (r,g,b,a) = *)
+(*     Bigarray.Array1.set vertices ~pos:(i+0) x; *)
+(*     Bigarray.Array1.set vertices ~pos:(i+1) y; *)
+(*     Bigarray.Array1.set colors   ~pos:(2*i+0) r; *)
+(*     Bigarray.Array1.set colors   ~pos:(2*i+1) g; *)
+(*     Bigarray.Array1.set colors   ~pos:(2*i+2) b; *)
+(*     Bigarray.Array1.set colors   ~pos:(2*i+3) a; *)
+(*     i+2 in *)
+(*   let store_line i (x1,y1) (x2,y2) color = *)
+(*     let dx = float (x2-x1) in *)
+(*     let dy = float (y2-y1) in *)
+(*     let len dx dy = sqrt ((dx*.dx)+.(dy*.dy)) in *)
+(*     let l = len dx dy in *)
+(*     let vx = -0.5*.dx /. l in *)
+(*     let vy =  0.5*.dy /. l in *)
+(*     let c1 = of_dec(x1)-.vy, of_dec(y1)-.vx in *)
+(*     let c2 = of_dec(x2)-.vy, of_dec(y2)-.vx in *)
+(*     let c3 = of_dec(x2)+.vy, of_dec(y2)+.vx in *)
+(*     let c4 = of_dec(x1)+.vy, of_dec(y1)+.vx in *)
+(*     let i = store_vtx i c1 color in *)
+(*     let i = store_vtx i c2 color in *)
+(*     let i = store_vtx i c3 color in *)
+(*     let i = store_vtx i c4 color in *)
+(*       i in *)
+(*   let store_rect i ((x1,y1),(x2,y2)) color = *)
+(*     let i = store_line i (x1,y1) (x2,y1) color in *)
+(*     let i = store_line i (x2,y1) (x2,y2) color in *)
+(*     let i = store_line i (x2,y2) (x1,y2) color in *)
+(*     let i = store_line i (x1,y2) (x1,y1) color in *)
+(*       i *)
+(*   in *)
+(*   let i = ref 0 in *)
+(*     List.iter (function *)
+(* 		  | Rect (r,c) ->             i:= store_rect !i (Rect.abs_dim r) c *)
+(* 		  | Line ((x1,y1,x2,y2),c) -> i:= store_line !i (x1,y1) (x2,y2) c *)
+(* 		  | Custom _ -> () *)
+(* 	       ) *)
 
-      lst;
+(*       lst; *)
 
-    vertices,colors
+(*     vertices,colors *)
 
-let draw el =
-  let vertices,color = triangulate [el] in
-    match el with Custom code -> code () | _ -> ();
-    GlArray.disable `normal;
-    GlArray.disable `texture_coord;
-    GlArray.enable `vertex;
-    GlArray.enable `color;
-    GlArray.vertex `two vertices;
-    GlArray.color `four color;
-    GlArray.draw_arrays `quads ~first:0 ~count:((Raw.length vertices)/2);
+(* let draw el = *)
+(*   let vertices,color = triangulate [el] in *)
+(*     match el with Custom code -> code () | _ -> (); *)
+(*     glDisableClientState GL_NORMAL_ARRAY; *)
+(*     glDisableClientState Attrib.GL_TEXTURE_BIT_coord; *)
+(*     glEnableClientState GL_VERTEX_ARRAY; *)
+(*     glEnableClientState GL_COLOR_BUFFER_BIT; *)
+(*     glVertexPointer `two vertices; *)
+(*     glColorPointer `four color; *)
+(*     glDrawArrays GL_QUADS ~first:0 ~count:((Raw.length vertices)/2); *)
+(* end *)
 end
-
 open BatInt
 
 let render_bitmap_string x y font string =
-  GlMat.mode `projection;
-  GlMat.push ();
-  GlMat.load_identity ();
+  glMatrixMode GL_PROJECTION;
+  glPushMatrix ();
+  glLoadIdentity ();
   let w,h = Display.display_size in
   let right, top = float w, float h in
-  GluMat.ortho2d ~x:(0., right) ~y:(0.,top);
-  GlMat.mode `modelview;
-  GlMat.push ();
-  GlMat.load_identity ();
-  GlDraw.color (0., 0., 0.);
-  GlPix.raster_pos ~x ~y:(top-.y-.10.) ~z:0. ();
+  Glu.gluOrtho2D ~left:0. ~right:right ~top:top ~bottom:0.;
+  glMatrixMode GL_MODELVIEW;
+  glPushMatrix ();
+  glLoadIdentity ();
+  glColor3 ~r:0. ~g:0. ~b:0.;
+  glRasterPos3 ~x ~y:(top-.y-.10.) ~z:0.;
   for i = 0 to String.length string - 1 do
-    Glut.bitmapCharacter ~font ~c:(int_of_char (string.[i]))
+    Glut.glutBitmapCharacter ~font ~c:(string.[i])
   done;
-  GlMat.pop ();
-  GlMat.mode `projection;
-  GlMat.pop ();
-  GlMat.mode `modelview
+  glPopMatrix ();
+  glMatrixMode GL_PROJECTION;
+  glPopMatrix ();
+  glMatrixMode GL_MODELVIEW
   
 let draw_text x y text =
-  render_bitmap_string (float x) (float y) Glut.BITMAP_8_BY_13 text
+  render_bitmap_string (float x) (float y) Glut.GLUT_BITMAP_8_BY_13 text
 
 let text_width str = 
-  Glut.bitmapLength ~font:Glut.BITMAP_8_BY_13 ~str
+  Glut.glutBitmapLength ~font:Glut.GLUT_BITMAP_8_BY_13 ~str

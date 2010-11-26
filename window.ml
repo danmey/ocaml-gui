@@ -1,3 +1,4 @@
+open GL
 open Draw
 
 type window = {
@@ -16,13 +17,13 @@ let center_rect = lift22 center_coord float
 
 let default_painter rect =
    let x, y, w, h = center_rect rect in
-   GlDraw.begins `line_loop;
-   GlDraw.color (1.,1.,1.);
-   GlDraw.vertex ~x ~y ();
-   GlDraw.vertex ~x:(x + w) ~y ();
-   GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
-   GlDraw.vertex ~x ~y:(y + h) ();
-   GlDraw.ends ();
+   glBegin GL_LINE_LOOP;
+   glColor3 ~r:1. ~g:1. ~b:1.;
+   glVertex3 ~x ~y ~z:0.;
+   glVertex3 ~x:(x + w) ~y ~z:0.;
+   glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+   glVertex3 ~x ~y:(y + h) ~z:0.;
+   glEnd ();
    ()
 
 let default rect = { pos = rect; children = []; painter = default_painter }
@@ -39,13 +40,13 @@ let with_scisor rect f =
     let open BatInt in
         (x, screen_height-y-h, w, h)
     in
-    GlMat.mode `modelview;
-    GlMat.load_identity ();
+    glMatrixMode GL_MODELVIEW;
+    glLoadIdentity ();
     let x, y, width, height = coords rect in
-    GlMisc.scissor ~x ~y ~width ~height;
-    Gl.enable `scissor_test;
+    glScissor ~x ~y ~width ~height;
+    glEnable GL_SCISSOR_TEST;
     f ();
-    Gl.disable `scissor_test
+    glDisable GL_SCISSOR_TEST
 
 let desktop_rect = Rect.rect (0,0) Display.display_size
 

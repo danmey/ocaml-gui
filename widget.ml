@@ -1,83 +1,83 @@
 open Draw
-
+open GL
 open BatFloat
 
 type state = Normal | Pressed | Dragged
 
-let c r g b = GlDraw.color (float r/.255., float g/.255., float b/.255.)
+let c r g b = glColor3 ~r:(float r/.255.) ~g:(float g/.255.) ~b:(float b/.255.)
 let button_painter state rect =
   let x, y, w, h = Window.center_rect rect in
   (* Should use skinning instead *)
   match state with
     | Normal ->
-      GlDraw.begins `lines;
+      glBegin GL_LINES;
       c 132 132 132;
-      GlDraw.vertex ~x:(x + w-2.) ~y:(y + 1.) ();
-      GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+      glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.;
+      glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.;
 
-      GlDraw.vertex ~x:(x+1.) ~y:(y + h - 2.) ();
-      GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+      glVertex3 ~x:(x+1.) ~y:(y + h - 2.) ~z:0.;
+      glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.;
 
       c 66 66 66;
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+      glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
+      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
 
-      GlDraw.vertex ~x:x ~y:(y + h-1.) ();
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+      glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
+      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
 
       c 255 255 255;
-      GlDraw.vertex ~x:x ~y:y ();
-      GlDraw.vertex ~x:(x + w-2.) ~y:y ();
+      glVertex3 ~x:x ~y:y ~z:0.;
+      glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
 
-      GlDraw.vertex ~x:x ~y:y ();
-      GlDraw.vertex ~x:x ~y:(y+h-2.) ();
+      glVertex3 ~x:x ~y:y ~z:0.;
+      glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
 
-      GlDraw.ends ()
+      glEnd ()
 
     | Pressed ->
-      GlDraw.begins `lines;
+      glBegin GL_LINES;
       
       c 255 255 255;
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+      glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
+      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
       
-      GlDraw.vertex ~x:x ~y:(y + h-1.) ();
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+      glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
+      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
       
       c 132 132 132;
-      GlDraw.vertex ~x:x ~y:y ();
-      GlDraw.vertex ~x:(x + w-2.) ~y:y ();
+      glVertex3 ~x:x ~y:y ~z:0.;
+      glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
       
-      GlDraw.vertex ~x:x ~y:y ();
-      GlDraw.vertex ~x:x ~y:(y+h-2.) ();
-      GlDraw.ends ()
+      glVertex3 ~x:x ~y:y ~z:0.;
+      glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
+      glEnd ()
     | Dragged ->
-      GlDraw.begins `lines;
+      glBegin GL_LINES;
       
       c 255 0 0;
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+      glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
+      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
       
-      GlDraw.vertex ~x:x ~y:(y + h-1.) ();
-      GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+      glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
+      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
       
       c 255 132 132;
-      GlDraw.vertex ~x:x ~y:y ();
-      GlDraw.vertex ~x:(x + w-2.) ~y:y ();
+      glVertex3 ~x:x ~y:y ~z:0.;
+      glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
       
-      GlDraw.vertex ~x:x ~y:y ();
-      GlDraw.vertex ~x:x ~y:(y+h-2.) ();
-      GlDraw.ends ()
+      glVertex3 ~x:x ~y:y ~z:0.;
+      glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
+      glEnd ()
 
 open BatFloat
 (* let quad_painter rect = *)
 (*    let x, y, w, h = Window.center_rect rect in *)
-(*    GlDraw.begins `quads; *)
-(*    GlDraw.vertex ~x ~y (); *)
-(*    GlDraw.vertex ~x:(x + w) ~y (); *)
-(*    GlDraw.vertex ~x:(x + w) ~y:(y + h) (); *)
-(*    GlDraw.vertex ~x ~y:(y + h) (); *)
-(*    GlDraw.ends (); *)
+(*    glBegin GL_QUADS; *)
+(*    glVertex3 ~x ~y (); *)
+(*    glVertex3 ~x:(x + w) ~y (); *)
+(*    glVertex3 ~x:(x + w) ~y:(y + h) (); *)
+(*    glVertex3 ~x ~y:(y + h) (); *)
+(*    glEnd (); *)
 (*    () *)
 
 open BatInt
@@ -335,22 +335,22 @@ let caption_painter2 text _ state rect =
    let len = float (text_width text) in
    let ofs_x = (w - len) / 2. + x in
    let ofs_y = (h - 10.) / 2. + y in
-   GlDraw.begins `lines;
+   glBegin GL_LINES;
    
    c 255 0 0;
-   GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
-   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+   glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
+   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
    
-   GlDraw.vertex ~x:x ~y:(y + h-1.) ();
-   GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+   glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
+   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
    
    c 255 132 132;
-   GlDraw.vertex ~x:x ~y:y ();
-   GlDraw.vertex ~x:(x + w-2.) ~y:y ();
+   glVertex3 ~x:x ~y:y ~z:0.;
+   glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
    
-   GlDraw.vertex ~x:x ~y:y ();
-   GlDraw.vertex ~x:x ~y:(y+h-2.) ();
-   GlDraw.ends ();
+   glVertex3 ~x:x ~y:y ~z:0.;
+   glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
+   glEnd ();
 
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
@@ -487,13 +487,13 @@ class graphics = object ( self : 'self )
     window.Window.painter <- self#draw
     method draw rect =
       let x, y, w, h = Window.center_rect rect in
-      GlDraw.begins `quads;
-      GlDraw.color (0.,0.,0.);
-      GlDraw.vertex ~x ~y ();
-      GlDraw.vertex ~x:(x + w) ~y ();
-      GlDraw.vertex ~x:(x + w) ~y:(y + h) ();
-      GlDraw.vertex ~x ~y:(y + h) ();
-      GlDraw.ends ();
+      glBegin GL_QUADS;
+      glColor3 ~r:0. ~g:0. ~b:0.;
+      glVertex3 ~x ~y ~z:0.;
+      glVertex3 ~x:(x + w) ~y ~z:0.;
+      glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+      glVertex3 ~x ~y:(y + h) ~z:0.;
+      glEnd ();
       ()
 end
 
