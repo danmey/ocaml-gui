@@ -67,6 +67,7 @@ class block name (properties : properties) = object ( self : 'self )
   val right_border = new draggable_constrained (HorizontalWith 10)
   val name = name
   val properties = properties
+  val mutable focus = false
   initializer
     canvas#add left_border;
     canvas#add right_border
@@ -105,7 +106,30 @@ class block name (properties : properties) = object ( self : 'self )
                      ""));
     super # mouse_down b p
 
-      
+  method focus is = focus <- is
+
+  method paint state rect =
+    let open BatFloat in
+    let x, y, w, h = Window.center_rect rect in
+    button_painter state rect;
+    let len = float (text_width self # name) in
+    let ofs_x = (w - len) / 2. + x in
+    let ofs_y = (h - 10.) / 2. + y in
+    draw_text (int_of_float ofs_x) (int_of_float ofs_y) self # name;
+    if focus then
+      (GlDraw.begins `lines;
+       c 255 132 132;
+       GlDraw.vertex ~x:(x + 1.) ~y:(y + 1.) ();
+       GlDraw.vertex ~x:(x + w-2.) ~y:(y + 1.) ();
+       GlDraw.vertex ~x:(x + w-2.) ~y:(y + h-2.) ();
+       GlDraw.vertex ~x:(x +1.) ~y:(y + h-2.) ();
+       
+       GlDraw.vertex ~x:(x + 0.) ~y:(y + 0.) ();
+       GlDraw.vertex ~x:(x + w-1.) ~y:(y + 0.) ();
+       GlDraw.vertex ~x:(x + w-1.) ~y:(y + h-1.) ();
+       GlDraw.vertex ~x:(x +0.) ~y:(y + h-1.) ();
+       GlDraw.ends ())
+
   method get_properties = properties
         
 end
@@ -119,7 +143,8 @@ class texture_preview trigger = object ( self : 'self )
   val mutable texid = None
   initializer
     window.Window.painter <- self#draw;
-    (* texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 0.4)))) *)
+    (* texid <- Some (Texture.Tga.gl_maketex  *)
+    (*                  (Texgen.array_of_texture .(TexGen.clouds 3 0.4))) *)
 
     method draw rect =
       BatOption.may (fun texid ->
@@ -152,24 +177,24 @@ end
 let property_pane = new frame fill_layout
 
 let properties = 
-  ["perlin", 
-   ["persistence", Float { min = 0.; max = 3.; default = 0.25; step = 0.01 };
+  ["perlin",[
+    "persistence", Float { min = 0.; max = 3.; default = 0.25; step = 0.01 };
     "octaves", Int { min=1; max=8; default=1; step = 0.2 }; ];
-
-   "add",  
-   [];
-
-   "light", 
-   ["lx", Float { min = 0.; max = 1.; default = 0.; step = 0.01 };
+   "add",[
+   ];
+   "light", [
+     "lx", Float { min = 0.; max = 1.; default = 0.; step = 0.01 };
     "ly", Float { min = 0.; max = 1.; default = 1.; step = 0.01 };
     "ldx", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };
-    "ldy", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };]]
+    "ldy", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. }; ]
+  ]
     
 
 class block_canvas = object ( self : 'self)
   inherit canvas as canvas
   inherit fixed as super
   val mutable last_mouse_pos = (0,0)
+  val mutable focused_block = None
   method mouse_down button pos =
     match button with
       | Event.Right ->
@@ -183,16 +208,18 @@ class block_canvas = object ( self : 'self)
       | _ -> super # mouse_down button pos
 
   method layout =
-    (* let rects = List.map (fun w -> w # window.pos) widgets in *)
-    (* let widget_rects = List.combine rects widgets in *)
-    (* let sorted = BatList.sort ~cmp:block_cmp rects in *)
-    (* let rec stack_loop acc cur_y = function *)
-    (*   | x :: xs when x.Rect.y = cur_y -> *)
-    (*     (match acc with *)
-    (*       | [] -> stack_loop ([x] :: acc) cur_y xs *)
-    (*       | a :: b -> stack_loop ((a @ [x]) :: b) cur_y xs) *)
-    (*   | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs *)
-    (*   | [] -> acc in *)
+    let open BatInt in
+    let rects = List.map (fun (_,w) -> w # window.pos) widgets in
+    let widget_rects = List.combine rects widgets in
+    let sorted = BatList.sort ~cmp:block_cmp rects in
+    let rec stack_loop acc cur_y = function
+      | x :: xs when x.Rect.y = cur_y ->
+        (match acc with
+          | [] -> stack_loop ([x] :: acc) cur_y xs
+          | a :: b -> stack_loop ((a @ [x]) :: b) cur_y xs)
+      | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs
+      | [] -> acc in
+    stack_loop [[]] (List.hd sorted).Rect.y
     
     (* let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in *)
     
@@ -200,12 +227,17 @@ class block_canvas = object ( self : 'self)
     (*   | x :: xs -> String.concat "\t" (List.map (fun rect -> (List.assoc rect widget_rects)#name) x) :: (loop xs) *)
     (*   | [] -> [] *)
     (* in *)
-    ()
+    (* () *)
     (* let rec tree_loop parent_name = function *)
     (*   | x :: xs -> Children parent_name (List.map (fun rect -> (List.assoc rect widget_rects) # name) x) :: (tree_loop xs) *)
     (*   | [] -> [] *)
     (* in *)
-    
+
+  method focus_block block =
+    BatOption.may (fun block -> block # focus false) focused_block;
+    block # focus true;
+    focused_block <- Some block
+
     method event wind = 
       function
       | Event.Custom ("menu_item", _, what) -> 
@@ -217,16 +249,16 @@ class block_canvas = object ( self : 'self)
         let b = new block what properties_pane in
         self#add (b :> draggable);
         b#invalidate (Rect.rect last_mouse_pos (80, 20));
+        self # focus_block b;
         true
       | Event.Custom ("block_clicked", _, _) ->
-        (try
-        (let widget = self # find wind in
+        let widget = self # find wind in
         let block : block = Obj.magic widget in
         let properties_pane = block # get_properties in
         property_pane # remove_all;
         property_pane # add (properties_pane :> draggable);
-        property_pane # revalidate)
-        with Not_found -> print_endline "ups";);
+        property_pane # revalidate;
+        self # focus_block block;
         true
       | ev -> super # event wind ev
 end

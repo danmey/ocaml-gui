@@ -27,6 +27,7 @@ class sphere_view xw yw zw ww = object ( self : 'self )
       GlMat.load_identity ();
       let x, y, z,w = xw#value, yw#value, zw#value, ww#value in
       let h = w in
+      
       GluMat.look_at
         ~eye:(x, y, z)
         ~center:(0.0, 0.0, 0.0)
@@ -77,6 +78,7 @@ end
 let _ =
   Gui.init 
     (fun () ->
+      (* Png_loader.load_img (Filename "ala"); *)
       let g = new desktop in
       let generate_button = new generate_button in
       let control_pane = ((new texture_preview generate_button) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
