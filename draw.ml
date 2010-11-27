@@ -129,7 +129,7 @@ let render_bitmap_string x y font string =
   glMatrixMode GL_MODELVIEW;
   glPushMatrix ();
   glLoadIdentity ();
-  glColor3 ~r:0. ~g:0. ~b:0.;
+  glDisable GL_TEXTURE_2D;
   glRasterPos3 ~x ~y:(top-.y-.10.) ~z:0.;
   for i = 0 to String.length string - 1 do
     Glut.glutBitmapCharacter ~font ~c:(string.[i])

@@ -132,6 +132,8 @@ class block name (properties : properties) = object ( self : 'self )
   (*      (\* glVertex3 ~x:(x +0.) ~y:(y + h-1.) ~z:0.; *\) *)
   (*      (\* glEnd *\) ()) *)
 
+  method paint state = caption_painter2 self # name 0 state
+
   method get_properties = properties
         
 end

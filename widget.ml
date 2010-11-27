@@ -148,7 +148,7 @@ let bg_painter state rect =
           glVertex3 ~x:x ~y:(y + h) ~z:0.
         in
         let open BatInt in
-            let texid = Resource.get "panel-bg" in
+            let texid = Resource.get "button-normal" in
             glEnable GL_TEXTURE_2D;
             glEnable GL_BLEND;
             glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
@@ -169,6 +169,36 @@ let bg_painter state rect =
             
             (* Centre *)
             quad (x+2, y+2) (w-4, h-4) (2,2) (tw-4, th-4);
+        glEnd ()
+
+let bg_painter state rect =
+  (* Should use skinning instead *)
+  (* match state with *)
+  (*   | Normal -> *)
+  
+
+        let x, y, w, h = Window.center_rect rect in
+        let x, y, w, h = int_of_float x, int_of_float y, int_of_float w, int_of_float h in
+
+        let quad (x, y) (w, h)  =
+          let x,y,w,h = 
+            float_of_int x,
+            float_of_int y,
+            float_of_int w,
+            float_of_int h
+          in
+          glVertex3 ~x ~y ~z:0.;
+          glVertex3 ~x:(x + w) ~y ~z:0.;
+          glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+          glVertex3 ~x:x ~y:(y + h) ~z:0.
+        in
+        let open BatInt in
+            glDisable GL_TEXTURE_2D;
+            glDisable GL_BLEND;
+            glBegin GL_QUADS;
+            glColor3 ~r:(120./.256.) ~g:(100./.256.) ~b:(100./.256.);
+            quad (x, y) (w,h);
+
         glEnd ()
 
 open BatFloat
@@ -236,6 +266,9 @@ class virtual [ 'a ] composite = object ( self : 'self )
 
   method iter f = List.iter (fun (_, w) -> f w) widgets
   method find h = List.assq h widgets
+
+  method paint (state : state) (rect : Rect.t) = bg_painter state rect
+
 end
 
 class [ 'a ] generic_canvas = object ( self : 'self )
@@ -255,6 +288,7 @@ class [ 'a ] generic_canvas = object ( self : 'self )
 
   method dragged widget dpos = ()
   method clicked widget button pos = ()
+  method paint = bg_painter
 
 end and canvas = object ( self : 'self )
   inherit [ draggable ] generic_canvas
@@ -295,14 +329,21 @@ end and draggable = object ( self : 'self )
     BatOption.may (fun parent -> parent#dragged (self :> draggable) dpos) parent
   
   method drag_end = true
+
+  method paint = button_painter
+
 end
 
 class fixed = object ( self : 'self )
   inherit draggable
 
+
   method follow_drag dpos = () 
   method drag point pos dpos = ()
   method drag_end = false
+
+  method paint = bg_painter
+
 end
 
 class desktop =  object ( self : 'self )
@@ -324,7 +365,7 @@ class draggable_constrained constr = object ( self : 'self )
       | Vertical -> window.Window.pos.Rect.y <- snd pos
       | HorizontalWith amount -> window.Window.pos.Rect.x <- ( fst pos + amount / 2 ) / amount * amount);
     BatOption.may (fun parent -> parent#dragged (self :> draggable) dpos) parent
-
+  method paint = button_painter
 end
 
 class splitter first second constr1 = object ( self : 'self )
@@ -429,6 +470,7 @@ let caption_painter text _ state rect =
    let len = float (text_width text) in
    let ofs_x = (w - len) / 2. + x in
    let ofs_y = (h - 10.) / 2. + y in
+   glColor3 ~r:(200./.256.) ~g:(180./.256.) ~b:(180./.256.);
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
 
@@ -454,7 +496,7 @@ let caption_painter2 text _ state rect =
   (*  glVertex3 ~x:x ~y:y ~z:0.; *)
   (*  glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
   (* glEnd (); *)
-
+   glColor3 ~r:(200./.256.) ~g:(180./.256.) ~b:(180./.256.);
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
 
