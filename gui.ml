@@ -50,7 +50,8 @@ let with_view f =
 
 let display () =
   glDisable GL_SCISSOR_TEST;
-  glClearColor ~r:(214./255.) ~g:(214./.255.) ~b:(206./.255.) ~a:0.0;
+  (* glClearColor ~r:(214./255.) ~g:(214./.255.) ~b:(206./.255.) ~a:0.0; *)
+  glClearColor ~r:1. ~g:1. ~b:1. ~a:1.0;
   glClear [ GL_COLOR_BUFFER_BIT; GL_DEPTH_BUFFER_BIT];
   gluPerspective ~fovy:60. ~aspect:1.6 ~zNear:0.1 ~zFar:100.;
   glDisable GL_DEPTH_TEST ;

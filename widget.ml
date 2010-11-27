@@ -4,70 +4,172 @@ open BatFloat
 
 type state = Normal | Pressed | Dragged
 
-let c r g b = glColor3 ~r:(float r/.255.) ~g:(float g/.255.) ~b:(float b/.255.)
+(* let c r g b = glColor3 ~r:(float r/.255.) ~g:(float g/.255.) ~b:(float b/.255.) *)
 let button_painter state rect =
   let x, y, w, h = Window.center_rect rect in
   (* Should use skinning instead *)
-  match state with
-    | Normal ->
-      glBegin GL_LINES;
-      c 132 132 132;
-      glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.;
-      glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.;
+  (* match state with *)
+  (*   | Normal -> *)
+  let tw,th = 32, 16 in
+  let tcx i = (float i) /. float tw in
+  let tcy i = (float i) /. float th in
 
-      glVertex3 ~x:(x+1.) ~y:(y + h - 2.) ~z:0.;
-      glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.;
+        let x, y, w, h = Window.center_rect rect in
+        let x, y, w, h = int_of_float x, int_of_float y, int_of_float w, int_of_float h in
 
-      c 66 66 66;
-      glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
-      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+        let quad (x, y) (w, h) (xt,yt) (wt, ht)  =
+          let x,y,w,h = 
+            float_of_int x,
+            float_of_int y,
+            float_of_int w,
+            float_of_int h
+          in
+          glColor3 ~r:1. ~g:1. ~b:1.;
+          glTexCoord2 ~s:(tcx xt) ~t:(tcy yt);
+          glVertex3 ~x ~y ~z:0.;
+          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy yt);
+          glVertex3 ~x:(x + w) ~y ~z:0.;
+          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy BatInt.(yt+ht));
+          glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+          glTexCoord2 ~s:(tcx xt) ~t:(tcy BatInt.(yt+ht));
+          glVertex3 ~x:x ~y:(y + h) ~z:0.
+        in
+        let open BatInt in
+            let texid = Resource.get "button-normal" in
+            glEnable GL_TEXTURE_2D;
+            glEnable GL_BLEND;
+            glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
+            glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid;
+            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
+            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
+            glBegin GL_QUADS;
+            quad (x+2, y)     (w-4, 2) (2, 0) (tw-4, 2);
+            quad (x+2, y+h-2) (w-4, 2) (2, th-2) (tw-4, 2);
+            quad (x, y+2)     (2, h-4) (0, 2) (2, th-4);
+            quad (x + w-2, y+2) (2, h-4) (tw-2, 2) (0, th-4);
+            
+            (* Corners *)
+            quad (x, y) (2, 2) (0, 0) (2, 2);
+            quad (x+w-2, y) (2, 2) (tw-2, 0) (2, 2);
+            quad (x+w-2, y+h-2) (2, 2) (tw-2, th-2) (2, 2);
+            quad (x, y+h-2) (2, 2) (0, th-2) (2, 2);
+            
+            (* Centre *)
+            quad (x+2, y+2) (w-4, h-4) (2,2) (tw-4, th-4);
+        glEnd ()
+        (* glDisable GL_TEXTURE_2D *)
 
-      glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
-      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+      (* glBegin GL_LINES; *)
+      (* c 132 132 132; *)
+      (* glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.; *)
+      (* glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.; *)
 
-      c 255 255 255;
-      glVertex3 ~x:x ~y:y ~z:0.;
-      glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
+      (* glVertex3 ~x:(x+1.) ~y:(y + h - 2.) ~z:0.; *)
+      (* glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.; *)
 
-      glVertex3 ~x:x ~y:y ~z:0.;
-      glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
+      (* c 66 66 66; *)
+      (* glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
+      (* glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
 
-      glEnd ()
+      (* glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
+      (* glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
 
-    | Pressed ->
-      glBegin GL_LINES;
+      (* c 255 255 255; *)
+      (* glVertex3 ~x:x ~y:y ~z:0.; *)
+      (* glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
+
+      (* glVertex3 ~x:x ~y:y ~z:0.; *)
+      (* glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
+
+      (* glEnd () *)
+
+    (* | Pressed -> *)
+    (*   glBegin GL_LINES; *)
       
-      c 255 255 255;
-      glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
-      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+    (*   c 255 255 255; *)
+    (*   glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
+    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
       
-      glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
-      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+    (*   glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
+    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
       
-      c 132 132 132;
-      glVertex3 ~x:x ~y:y ~z:0.;
-      glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
+    (*   c 132 132 132; *)
+    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
+    (*   glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
       
-      glVertex3 ~x:x ~y:y ~z:0.;
-      glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
-      glEnd ()
-    | Dragged ->
-      glBegin GL_LINES;
+    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
+    (*   glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
+    (*   glEnd () *)
+    (* | Dragged -> *)
+    (*   glBegin GL_LINES; *)
       
-      c 255 0 0;
-      glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
-      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+    (*   c 255 0 0; *)
+    (*   glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
+    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
       
-      glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
-      glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+    (*   glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
+    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
       
-      c 255 132 132;
-      glVertex3 ~x:x ~y:y ~z:0.;
-      glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
+    (*   c 255 132 132; *)
+    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
+    (*   glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
       
-      glVertex3 ~x:x ~y:y ~z:0.;
-      glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
-      glEnd ()
+    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
+    (*   glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
+    (*   glEnd () *)
+
+let bg_painter state rect =
+  (* Should use skinning instead *)
+  (* match state with *)
+  (*   | Normal -> *)
+  
+  let tw,th = 128, 128 in
+  let tcx i = (float i) /. float tw in
+  let tcy i = (float i) /. float th in
+
+        let x, y, w, h = Window.center_rect rect in
+        let x, y, w, h = int_of_float x, int_of_float y, int_of_float w, int_of_float h in
+
+        let quad (x, y) (w, h) (xt,yt) (wt, ht)  =
+          let x,y,w,h = 
+            float_of_int x,
+            float_of_int y,
+            float_of_int w,
+            float_of_int h
+          in
+          glColor3 ~r:1. ~g:1. ~b:1.;
+          glTexCoord2 ~s:(tcx xt) ~t:(tcy yt);
+          glVertex3 ~x ~y ~z:0.;
+          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy yt);
+          glVertex3 ~x:(x + w) ~y ~z:0.;
+          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy BatInt.(yt+ht));
+          glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+          glTexCoord2 ~s:(tcx xt) ~t:(tcy BatInt.(yt+ht));
+          glVertex3 ~x:x ~y:(y + h) ~z:0.
+        in
+        let open BatInt in
+            let texid = Resource.get "panel-bg" in
+            glEnable GL_TEXTURE_2D;
+            glEnable GL_BLEND;
+            glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
+            glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid;
+            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
+            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
+            glBegin GL_QUADS;
+            quad (x+2, y)     (w-4, 2) (2, 0) (tw-4, 2);
+            quad (x+2, y+h-2) (w-4, 2) (2, th-2) (tw-4, 2);
+            quad (x, y+2)     (2, h-4) (0, 2) (2, th-4);
+            quad (x + w-2, y+2) (2, h-4) (tw-2, 2) (0, th-4);
+            
+            (* Corners *)
+            quad (x, y) (2, 2) (0, 0) (2, 2);
+            quad (x+w-2, y) (2, 2) (tw-2, 0) (2, 2);
+            quad (x+w-2, y+h-2) (2, 2) (tw-2, th-2) (2, 2);
+            quad (x, y+h-2) (2, 2) (0, th-2) (2, 2);
+            
+            (* Centre *)
+            quad (x+2, y+2) (w-4, h-4) (2,2) (tw-4, th-4);
+        glEnd ()
 
 open BatFloat
 (* let quad_painter rect = *)
@@ -95,7 +197,7 @@ class graphical = object ( self : 'self )
   method invalidate rect = window.Window.pos <- rect
   method revalidate = self # invalidate window.Window.pos
 
-  method paint = button_painter
+  method paint = bg_painter
 end
 
 class interactive = object ( self : 'self )
@@ -331,26 +433,27 @@ let caption_painter text _ state rect =
    ()
 
 let caption_painter2 text _ state rect =
+  button_painter state rect;
    let x, y, w, h = Window.center_rect rect in
    let len = float (text_width text) in
    let ofs_x = (w - len) / 2. + x in
    let ofs_y = (h - 10.) / 2. + y in
-   glBegin GL_LINES;
+   (* glBegin GL_LINES; *)
    
-   c 255 0 0;
-   glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
-   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+  (*  c 255 0 0; *)
+  (*  glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
+  (*  glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
    
-   glVertex3 ~x:x ~y:(y + h-1.) ~z:0.;
-   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
+  (*  glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
+  (*  glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
    
-   c 255 132 132;
-   glVertex3 ~x:x ~y:y ~z:0.;
-   glVertex3 ~x:(x + w-2.) ~y:y ~z:0.;
+  (*  c 255 132 132; *)
+  (*  glVertex3 ~x:x ~y:y ~z:0.; *)
+  (*  glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
    
-   glVertex3 ~x:x ~y:y ~z:0.;
-   glVertex3 ~x:x ~y:(y+h-2.) ~z:0.;
-   glEnd ();
+  (*  glVertex3 ~x:x ~y:y ~z:0.; *)
+  (*  glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
+  (* glEnd (); *)
 
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
@@ -487,13 +590,13 @@ class graphics = object ( self : 'self )
     window.Window.painter <- self#draw
     method draw rect =
       let x, y, w, h = Window.center_rect rect in
-      glBegin GL_QUADS;
-      glColor3 ~r:0. ~g:0. ~b:0.;
-      glVertex3 ~x ~y ~z:0.;
-      glVertex3 ~x:(x + w) ~y ~z:0.;
-      glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
-      glVertex3 ~x ~y:(y + h) ~z:0.;
-      glEnd ();
+      (* glBegin GL_QUADS; *)
+      (* glColor3 ~r:0. ~g:0. ~b:0.; *)
+      (* glVertex3 ~x ~y ~z:0.; *)
+      (* glVertex3 ~x:(x + w) ~y ~z:0.; *)
+      (* glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.; *)
+      (* glVertex3 ~x ~y:(y + h) ~z:0.; *)
+      (* glEnd (); *)
       ()
 end
 

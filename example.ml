@@ -75,13 +75,13 @@ class generate_button = object (self : 'self)
 
 end
 
-let _ =
-  Gui.init 
+let a () =
+  Gui.init
     (fun () ->
       (* Png_loader.load_img (Filename "ala"); *)
       let g = new desktop in
       let generate_button = new generate_button in
-      let control_pane = ((new texture_preview generate_button) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
+      let control_pane = ((new fixed) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
       let open Blocks in
       (* let sl () = new slider (-1.0) 1.0 0.01 in *)
       (* let sx = (new int_slider 0 5 1.0) in *)
@@ -116,3 +116,18 @@ let _ =
       split_display#invalidate (Rect.rect (10,10) (w-20,h-20));
       g#invalidate (Rect.rect (0,0) (w,h));
       ())
+
+let b () =
+  Gui.init
+    (fun () ->
+      (* Png_loader.load_img (Filename "ala"); *)
+      let g = new desktop in
+      let generate_button = new generate_button in
+      let w,h = Display.display_size in
+      generate_button#invalidate (Rect.rect (0,0) (w-0,h-0));
+      g#invalidate (Rect.rect (100,100) (22,24));
+      ())
+;;
+
+a()
+;;

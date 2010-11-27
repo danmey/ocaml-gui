@@ -2,6 +2,7 @@ open Widget
 open Draw
 open Window
 open GL
+open Glu
 type 'a block_tree = Block of 'a * 'a list
 type stickiness = TopBottom | LeftRight
 
@@ -79,9 +80,9 @@ class block name (properties : properties) = object ( self : 'self )
 
   method value = ""
   method name = name
-  method paint state =
-    let caption = Printf.sprintf "%s: %s" name self#value in
-    caption_painter caption 0 state
+  (* method paint state = *)
+  (*   let caption = Printf.sprintf "%s: %s" name self#value in *)
+  (*   caption_painter caption 0 state *)
 
   method invalidate rect =
     super#invalidate rect;
@@ -108,34 +109,32 @@ class block name (properties : properties) = object ( self : 'self )
 
   method focus is = focus <- is
 
-  method paint state rect =
-    let open BatFloat in
-    let x, y, w, h = Window.center_rect rect in
-    button_painter state rect;
-    let len = float (text_width self # name) in
-    let ofs_x = (w - len) / 2. + x in
-    let ofs_y = (h - 10.) / 2. + y in
-    draw_text (int_of_float ofs_x) (int_of_float ofs_y) self # name;
-    if focus then
-      (glBegin GL_LINES;
-       c 255 132 132;
-       glVertex3 ~x:(x + 1.) ~y:(y + 1.) ~z:0.;
-       glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.;
-       glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.;
-       glVertex3 ~x:(x +1.) ~y:(y + h-2.) ~z:0.;
+  (* method paint state rect = *)
+  (*   let open BatFloat in *)
+  (*   let x, y, w, h = Window.center_rect rect in *)
+  (*   button_painter state rect; *)
+  (*   let len = float (text_width self # name) in *)
+  (*   let ofs_x = (w - len) / 2. + x in *)
+  (*   let ofs_y = (h - 10.) / 2. + y in *)
+  (*   draw_text (int_of_float ofs_x) (int_of_float ofs_y) self # name; *)
+  (*   if focus then *)
+  (*     ( *)
+  (*      (\*  glBegin GL_LINES; *\) *)
+  (*      (\* c 255 132 132; *\) *)
+  (*      (\* glVertex3 ~x:(x + 1.) ~y:(y + 1.) ~z:0.; *\) *)
+  (*      (\* glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.; *\) *)
+  (*      (\* glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.; *\) *)
+  (*      (\* glVertex3 ~x:(x +1.) ~y:(y + h-2.) ~z:0.; *\) *)
        
-       glVertex3 ~x:(x + 0.) ~y:(y + 0.) ~z:0.;
-       glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.;
-       glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.;
-       glVertex3 ~x:(x +0.) ~y:(y + h-1.) ~z:0.;
-       glEnd ())
+  (*      (\* glVertex3 ~x:(x + 0.) ~y:(y + 0.) ~z:0.; *\) *)
+  (*      (\* glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *\) *)
+  (*      (\* glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *\) *)
+  (*      (\* glVertex3 ~x:(x +0.) ~y:(y + h-1.) ~z:0.; *\) *)
+  (*      (\* glEnd *\) ()) *)
 
   method get_properties = properties
         
 end
-
-
-
 
 open BatFloat
 class texture_preview trigger = object ( self : 'self )
@@ -143,28 +142,30 @@ class texture_preview trigger = object ( self : 'self )
   val mutable texid = None
   initializer
     window.Window.painter <- self#draw;
+    (* Resource.load (); *)
+    texid <- Some (Resource.get "button-normal");
     (* texid <- Some (Texture.Tga.gl_maketex  *)
     (*                  (Texgen.array_of_texture .(TexGen.clouds 3 0.4))) *)
 
-    method draw rect =
-      (* BatOption.may (fun texid -> *)
-      (*   GlTex.bind_texture ~target:GL_TEXTURE_2D texid; *)
-      (*   glTexParameter ~target:GL_TEXTURE_2D (`mag_filter `nearest); *)
-      (*   glTexParameter ~target:GL_TEXTURE_2D (`min_filter `nearest);  *)
-      (*   glEnable GL_TEXTURE_2D; *)
-      (*   let x, y, w, h = Window.center_rect rect in *)
-      (*   glBegin GL_QUADS; *)
-      (*   glTexCoord2 (0.0, 0.0); *)
-      (*   glVertex3 ~x ~y (); *)
-      (*   glTexCoord2 (1.0, 0.0); *)
-      (*   glVertex3 ~x:(x + w) ~y (); *)
-      (*   glTexCoord2 (1.0, 1.0); *)
-      (*   glVertex3 ~x:(x + w) ~y:(y + h) (); *)
-      (*   glTexCoord2 (0.0, 1.0); *)
-      (*   glVertex3 ~x ~y:(y + h) (); *)
-      (*   glEnd (); *)
-      (*   Gl.disable GL_TEXTURE_2D; *)
-      (* ) texid; *) ()
+    (* method draw rect = *)
+    (*   BatOption.may (fun texid -> *)
+    (*     glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid; *)
+    (*     glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST); *)
+    (*     glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);  *)
+    (*     glEnable GL_TEXTURE_2D; *)
+    (*     let x, y, w, h = Window.center_rect rect in *)
+    (*     glBegin GL_QUADS; *)
+    (*     glTexCoord2 ~s:0.0 ~t:0.0; *)
+    (*     glVertex3 ~x ~y ~z:0.; *)
+    (*     glTexCoord2 ~s:1.0 ~t:0.0; *)
+    (*     glVertex3 ~x:(x + w) ~y ~z:0.; *)
+    (*     glTexCoord2 ~s:1.0 ~t:1.0; *)
+    (*     glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.; *)
+    (*     glTexCoord2 ~s:0.0 ~t:1.0; *)
+    (*     glVertex3 ~x ~y:(y + h) ~z:0.; *)
+    (*     glEnd (); *)
+    (*     glDisable GL_TEXTURE_2D) texid; () *)
+        
 
     method event wind ev = 
       match ev with
