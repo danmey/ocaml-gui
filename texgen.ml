@@ -1,4 +1,4 @@
-let texsize = 256
+
 
 (*type result = Val of float | RGB of (float * float * float)*)
 
@@ -90,6 +90,7 @@ type operator =
   | Rgb of rgb_params
   | Pixels of pixels_params
   | Blur of blur_params
+  | Phi of phi_params
 
 
 module Layer = struct
@@ -186,7 +187,7 @@ let clouds { octaves; persistence } =
       gen_list (((List.hd lst) *. 2.) :: lst) (a-1) 
     else lst 
   in
-  let clouds_a = gen_list [8.] octaves in
+  let clouds_a = gen_list [8./.256.] octaves in
   let clouds = List.map (fun a -> cloud a a) clouds_a in
   fun (x, y) -> 
     fst (List.fold_left 
@@ -388,9 +389,44 @@ let rec value op =
         let v' = sqrt ((x-.x0)*.(x-.x0)*.xr +. (y-.y0)*.(y-.y0)*.yr) in
         let v = BatFloat.pow v' atten in
         v
+     
       (* | Hsv (op1, op2, op3, params) -> hsv (value op1) (value op2) (value op3) params  *)
 
 
 and lift_lst lst = BatList.map value lst
 ;;
 
+let layer op x y = 
+  let v = value op ((float y /. 256.0), (float x /. 256.0)) in
+  (v,v,v)
+
+let layer2 op x y = 
+  let v = value op ((float y), (float x)) in
+  (v,v,v)
+
+let texture op = 
+  let ar = Array.make (256 * 256) (0.,0.,0.) in
+  for y = 0 to 256 - 1 do
+    for x = 0 to 256 - 1 do
+      let v = value op ((float y /. 256.0), (float x /. 256.0)) in
+      ar.(y*256+x) <- (v,v,v);
+    done
+  done;
+  ar
+;;
+TGA.write "test.tga" 256 (layer (Clouds { octaves = 3; persistence = 1.0; }))
+
+let op =     
+  Add [Glow { x0 = 0.0;
+    y0 = 0.0;
+    atten = 1.0;
+    xr = 1.0;
+    yr = 1.0; };
+    Glow { x0 = 0.0;
+           y0 = 0.0;
+           atten = 1.0;
+           xr = 1.0;
+           yr = 1.0; }]
+;;
+
+(* TGA.write "test.tga" 256 (layer op) *)

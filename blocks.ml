@@ -145,28 +145,26 @@ class texture_preview trigger = object ( self : 'self )
   initializer
     window.Window.painter <- self#draw;
     (* Resource.load (); *)
-    texid <- Some (Resource.get "button-normal");
-    (* texid <- Some (Texture.Tga.gl_maketex  *)
-    (*                  (Texgen.array_of_texture .(TexGen.clouds 3 0.4))) *)
+    texid <- Some (Texture.Tga.gl_maketex Texgen.texture)
 
-    (* method draw rect = *)
-    (*   BatOption.may (fun texid -> *)
-    (*     glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid; *)
-    (*     glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST); *)
-    (*     glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);  *)
-    (*     glEnable GL_TEXTURE_2D; *)
-    (*     let x, y, w, h = Window.center_rect rect in *)
-    (*     glBegin GL_QUADS; *)
-    (*     glTexCoord2 ~s:0.0 ~t:0.0; *)
-    (*     glVertex3 ~x ~y ~z:0.; *)
-    (*     glTexCoord2 ~s:1.0 ~t:0.0; *)
-    (*     glVertex3 ~x:(x + w) ~y ~z:0.; *)
-    (*     glTexCoord2 ~s:1.0 ~t:1.0; *)
-    (*     glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.; *)
-    (*     glTexCoord2 ~s:0.0 ~t:1.0; *)
-    (*     glVertex3 ~x ~y:(y + h) ~z:0.; *)
-    (*     glEnd (); *)
-    (*     glDisable GL_TEXTURE_2D) texid; () *)
+    method draw rect =
+      BatOption.may (fun texid ->
+        glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid;
+        glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
+        glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
+        glEnable GL_TEXTURE_2D;
+        let x, y, w, h = Window.center_rect rect in
+        glBegin GL_QUADS;
+        glTexCoord2 ~s:0.0 ~t:0.0;
+        glVertex3 ~x ~y ~z:0.;
+        glTexCoord2 ~s:1.0 ~t:0.0;
+        glVertex3 ~x:(x + w) ~y ~z:0.;
+        glTexCoord2 ~s:1.0 ~t:1.0;
+        glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+        glTexCoord2 ~s:0.0 ~t:1.0;
+        glVertex3 ~x ~y:(y + h) ~z:0.;
+        glEnd ();
+        glDisable GL_TEXTURE_2D) texid; ()
         
 
     method event wind ev = 

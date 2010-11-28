@@ -10,7 +10,7 @@ let button_painter state rect =
   (* Should use skinning instead *)
   (* match state with *)
   (*   | Normal -> *)
-  let tw,th = 32, 16 in
+  let tw,th = 32, 32 in
   let tcx i = (float i) /. float tw in
   let tcy i = (float i) /. float th in
 
@@ -35,27 +35,62 @@ let button_painter state rect =
           glVertex3 ~x:x ~y:(y + h) ~z:0.
         in
         let open BatInt in
-            let texid = Resource.get "button-normal" in
+            let texid = match state with 
+              | Normal -> Resource.get "button-normal"
+              | Dragged -> Resource.get "button-push" 
+              | _ -> Resource.get "button-normal"
+            in
             glEnable GL_TEXTURE_2D;
             glEnable GL_BLEND;
             glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
             glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid;
             glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
             glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
-            glBegin GL_QUADS;
-            quad (x+2, y)     (w-4, 2) (2, 0) (tw-4, 2);
-            quad (x+2, y+h-2) (w-4, 2) (2, th-2) (tw-4, 2);
-            quad (x, y+2)     (2, h-4) (0, 2) (2, th-4);
-            quad (x + w-2, y+2) (2, h-4) (tw-2, 2) (0, th-4);
+            let draw_tex (x,y) (w,h) (tw,th)  b = 
+              let b2 = b * 2 in
+              quad (x+b, y)     (w-b2, b) (b, 0) (tw-b2, b);
+              quad (x+b, y+h-b) (w-b2, b) (b, th-b) (tw-b2, b);
+              quad (x, y+b)     (b, h-b2) (0, b) (b, th-b2);
+              quad (x + w-b, y+b) (b, h-b2) (tw-b, b) (0, th-b2);
             
-            (* Corners *)
-            quad (x, y) (2, 2) (0, 0) (2, 2);
-            quad (x+w-2, y) (2, 2) (tw-2, 0) (2, 2);
-            quad (x+w-2, y+h-2) (2, 2) (tw-2, th-2) (2, 2);
-            quad (x, y+h-2) (2, 2) (0, th-2) (2, 2);
+              (* Corners *)
+              quad (x, y) (b, b) (0, 0) (b, b);
+              quad (x+w-b, y) (b, b) (tw-b, 0) (b, b);
+              quad (x+w-b, y+h-b) (b, b) (tw-b, th-b) (b, b);
+              quad (x, y+h-b) (b, b) (0, th-b) (b, b);
+
+              (* Centre *)
+              quad (x+b, y+b) (w-b2, h-b2) (b,b) (tw-b2, th-b2)
+            in
+              glBegin GL_QUADS;
+            (* quad (x+2, y)     (w-4, 2) (2, 0) (tw-4, 2); *)
+            (* quad (x+2, y+h-2) (w-4, 2) (2, th-2) (tw-4, 2); *)
+            (* quad (x, y+2)     (2, h-4) (0, 2) (2, th-4); *)
+            (* quad (x + w-2, y+2) (2, h-4) (tw-2, 2) (0, th-4); *)
             
-            (* Centre *)
-            quad (x+2, y+2) (w-4, h-4) (2,2) (tw-4, th-4);
+            (* (\* Corners *\) *)
+            (* quad (x, y) (2, 2) (0, 0) (2, 2); *)
+            (* quad (x+w-2, y) (2, 2) (tw-2, 0) (2, 2); *)
+            (* quad (x+w-2, y+h-2) (2, 2) (tw-2, th-2) (2, 2); *)
+            (* quad (x, y+h-2) (2, 2) (0, th-2) (2, 2); *)
+            
+            (* (\* Centre *\) *)
+            (* quad (x+2, y+2) (w-4, h-4) (2,2) (tw-4, th-4); *)
+
+            (* quad (x+3, y)     (w-6, 3) (3, 0) (tw-6, 3); *)
+            (* quad (x+3, y+h-3) (w-6, 3) (3, th-3) (tw-6, 3); *)
+            (* quad (x, y+3)     (3, h-6) (0, 3) (3, th-6); *)
+            (* quad (x + w-3, y+3) (3, h-6) (tw-3, 3) (0, th-6); *)
+            
+            (* (\* Corners *\) *)
+            (* quad (x, y) (3, 3) (0, 0) (3, 3); *)
+            (* quad (x+w-3, y) (3, 3) (tw-3, 0) (3, 3); *)
+            (* quad (x+w-3, y+h-3) (3, 3) (tw-3, th-3) (3, 3); *)
+            (* quad (x, y+h-3) (3, 3) (0, th-3) (3, 3); *)
+            
+            (* (\* Centre *\) *)
+            (* quad (x+3, y+3) (w-6, h-6) (3,3) (tw-6, th-6); *)
+            draw_tex (x,y) (w,h) (tw, th) 4;
         glEnd ()
         (* glDisable GL_TEXTURE_2D *)
 

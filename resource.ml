@@ -1,7 +1,8 @@
 open GL
 open Glu
 let resources =
-  ["button-normal", ("button-normal.png", ref None);
+  ["button-normal", ("button_round_blue.png", ref None);
+   "button-push", ("button_round_blue_push.png", ref None);
    "panel-bg", ("panel-bg.png", ref None);
    "button-menu-focused", ("button-menu-focused.png", ref None)]
 
@@ -32,6 +33,7 @@ let load_texture ~filename =
 let get ~name =
   match List.assoc name resources with
     | filename, reference when !reference = None -> 
+      let filename = "resources/" ^ filename in
       let resource = load_texture ~filename in
       reference := Some resource;
       resource

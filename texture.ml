@@ -39,7 +39,7 @@ and image_height = 256
 
 let make_image arr =
   let image =
-    GlPix.create `ubyte ~height:image_height ~width:image_width ~format:`rgba in
+    glPixCreate `ubyte ~height:image_height ~width:image_width ~format:`rgba in
   let raw = GlPix.to_raw image
   and pos = GlPix.raw_pos image in
     for i = 0 to image_width - 1 do
