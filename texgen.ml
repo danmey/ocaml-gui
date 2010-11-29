@@ -416,15 +416,27 @@ let tree =
 
 module A = Bigarray.Genarray;;
 
-let texture op = 
+let texture op =
+  let max = ref (-1000000.) in
+  let min = ref ( 1000000.) in
   let ar = A.create Bigarray.int8_unsigned Bigarray.c_layout [|256;256;4|] in
+  let ar_src = Array.create (256*256) 0. in
   for y = 0 to 256 - 1 do
     for x = 0 to 256 - 1 do
       let v = value op ((float y /. 256.0), (float x /. 256.0)) in
-      let v = int_of_float (v *. 255.0) in
-      A.set ar [|y;x;0|] v;
-      A.set ar [|y;x;1|] v;
-      A.set ar [|y;x;2|] v;
+      if v > !max then max := v;
+      if v < !min then min := v;
+      ar_src.(256 * y + x) <- v;
+    done
+  done;
+  for y = 0 to 256 - 1 do
+    for x = 0 to 256 - 1 do
+      let v = ar_src.(256 * y + x) in
+      let v' = (v -. !min) /. (!max -. !min) in
+      let v' = int_of_float (v' *. 255.0) in
+      A.set ar [|y;x;0|] v';
+      A.set ar [|y;x;1|] v';
+      A.set ar [|y;x;2|] v';
       A.set ar [|y;x;3|] 255;
     done
   done;

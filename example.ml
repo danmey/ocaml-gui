@@ -69,7 +69,7 @@ class generate_button = object (self : 'self)
       print_endline (parent#first#name);
       Event.run_events
         self # window
-        (Event.Parameters ["octaves",  Event.Float (float_of_string parent#first#value)])
+        (Event.Parameters ["octaves",  parent#first#value])
     ) parent;
     true
 
@@ -78,16 +78,34 @@ end
 open Blocks
 
 class texture_generator_view () =
-    let control_pane = ((new texture_preview) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
+    let control_pane = new texture_preview(* frame (fixed_vertical_layout 5 25) *) in
     let graphical_pane = new block_canvas in
     let (_, edit_properties) :: _ = properties in
     let edit_pane = new properties edit_properties in
-    let split_control = (new splitter control_pane (property_pane :> draggable) Vertical) in
+    let split_control = (new splitter (control_pane :> draggable) (property_pane :> draggable) Vertical) in
     let w,h = Display.display_size in
 object (self)
   inherit splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal
   initializer
     property_pane # add (edit_pane  :> fixed);
+
+  method event wind = function
+    | Event.Custom ("slide_end", _, _) -> 
+      let ws = edit_pane # widgets in
+      let params = 
+        List.map (fun (_,w) -> 
+          print_endline w#key; w # key, w # value) ws in
+      let propf name = let Event.Float v = List.assoc name params in v in
+      let propi name = let Event.Int v = List.assoc name params in v in
+      let open Texgen in
+      let op = Texgen.Clouds { octaves = propi "octaves"; persistence = propf "persistence"} in
+      Printf.printf "octaves: %d\n" (propi "octaves"); flush stdout;
+      let ti = Texture.Tga.gl_maketex (texture op) in
+      control_pane # set_image ti;
+      true
+    | _ -> false
+    
+
 end
 
       

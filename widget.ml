@@ -301,7 +301,7 @@ class virtual [ 'a ] composite = object ( self : 'self )
 
   method iter f = List.iter (fun (_, w) -> f w) widgets
   method find h = List.assq h widgets
-
+  method widgets = widgets
   method paint (state : state) (rect : Rect.t) = bg_painter state rect
 
 end
@@ -331,8 +331,8 @@ end and draggable = object ( self : 'self )
   inherit interactive as super
   val mutable dragged_pos = (0,0)
   val mutable parent : canvas option = None
-  method value = ""
-
+  method value = Event.Float 0.
+  method key = ""
   method set_parent c = parent <- Some c
   method name = ""
 
@@ -564,8 +564,6 @@ class slider name left right step = object ( self : 'self )
   val right = right
   val name = name
 
-  method value = string_of_float value
-  
   method clamp v = 
     let open BatFloat in
     if v >= left then (if v <= right then v else right) else left
@@ -576,12 +574,14 @@ class slider name left right step = object ( self : 'self )
   method drag _ _ (dx,_) =
     drag_value <- step *. (float dx);
 
-
+  method value = Event.Float value
+  method key = name
   method drag_end =
     let v = value +. drag_value in
     value <- self # clamp v;
     drag_value <- 0.;
     self # slide_end value;
+    Event.run_events self # window (Event.Custom ("slide_end", (0,0), ""));
     true
       
   method slide_end value = ()
@@ -607,10 +607,12 @@ class int_slider name left right step = object ( self : 'self )
     (float_of_int right)
     step
 
+  method value = Event.Int (int_of_float (round value))
   method drag_end =
     value <- round (value +. drag_value);
     drag_value <- 0.;
     self # slide_end value;
+    Event.run_events self # window (Event.Custom ("slide_end", (0,0), ""));
     true
 
   method caption value = 

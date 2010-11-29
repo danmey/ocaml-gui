@@ -78,7 +78,6 @@ class block name (properties : properties) = object ( self : 'self )
     window.pos.Rect.x <- grid x;
     window.pos.Rect.y <- grid y
 
-  method value = ""
   method name = name
   (* method paint state = *)
   (*   let caption = Printf.sprintf "%s: %s" name self#value in *)
@@ -144,8 +143,6 @@ class texture_preview = object ( self : 'self )
   val mutable texid = None
   initializer
     window.Window.painter <- self#draw;
-    (* Resource.load (); *)
-    texid <- Some (Texture.Tga.gl_maketex (Texgen.texture Texgen.op))
 
     method draw rect =
       BatOption.may (fun texid ->
@@ -167,7 +164,7 @@ class texture_preview = object ( self : 'self )
         glEnd ();
         glDisable GL_TEXTURE_2D) texid; ()
         
-
+    method set_image id = texid <- Some id
     method event wind ev = 
       let open Texgen in
       match ev with

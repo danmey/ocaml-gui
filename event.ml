@@ -6,7 +6,8 @@ type mouse_button =
   | Middle
 
 type value = 
-    Float of float
+  | Float of float
+  | Int of int
 
 type event =
   | MouseDown of mouse_button * Pos.t
