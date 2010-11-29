@@ -37,39 +37,55 @@ module Tga = struct
 let image_width = 256
 and image_height = 256
 
-let make_image arr =
-  let image =
-    glPixCreate `ubyte ~height:image_height ~width:image_width ~format:`rgba in
-  let raw = GlPix.to_raw image
-  and pos = GlPix.raw_pos image in
-    for i = 0 to image_width - 1 do
-      for j = 0 to image_height - 1 do
-	let r,g,b,a = arr.(image_width*i+j) in 
-(*	let v = arr.(image_width*i+j) in *)
-	Raw.sets raw ~pos:(pos ~x:j ~y:i)
-	  (ArrayLabels.map ~f:(fun x -> truncate (255.0 *. x))
-	   [|r;g;b;a|]);
-      done;
-    done;
-    image
+(* let make_image arr = *)
 
-  let gl_load file_name  = 
-    let tex = load file_name in
-    let image = make_image tex in
-    let tid = GlTex.gen_texture() in
-      GlTex.bind_texture `texture_2d tid;
-      GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
-      GlTex.parameter ~target:`texture_2d (`min_filter `nearest); 
-      GlTex.image2d image;
-      tid
+(*   let image = *)
+(*     glPixCreate `ubyte ~height:image_height ~width:image_width ~format:`rgba in *)
+(*   let raw = GlPix.to_raw image *)
+(*   and pos = GlPix.raw_pos image in *)
+(*     for i = 0 to image_width - 1 do *)
+(*       for j = 0 to image_height - 1 do *)
+(* 	let r,g,b,a = arr.(image_width*i+j) in  *)
+(* (\*	let v = arr.(image_width*i+j) in *\) *)
+(* 	Raw.sets raw ~pos:(pos ~x:j ~y:i) *)
+(* 	  (ArrayLabels.map ~f:(fun x -> truncate (255.0 *. x)) *)
+(* 	   [|r;g;b;a|]); *)
+(*       done; *)
+(*     done; *)
+(*     image *)
 
-  let gl_maketex arr  = 
-    let image = make_image arr in
-    let tid = GlTex.gen_texture() in
-      GlTex.bind_texture `texture_2d tid;
-      GlTex.parameter ~target:`texture_2d (`mag_filter `nearest);
-      GlTex.parameter ~target:`texture_2d (`min_filter `nearest); 
-      GlTex.image2d image;
-      tid
+  (* let gl_load file_name  =  *)
+  (*   let tex = load file_name in *)
+  (*   let image = make_image tex in *)
+  (*   let tid = GlTex.gen_texture() in *)
+  (*     GlTex.bind_texture `texture_2d tid; *)
+  (*     GlTex.parameter ~target:`texture_2d (`mag_filter `nearest); *)
+  (*     GlTex.parameter ~target:`texture_2d (`min_filter `nearest);  *)
+  (*     GlTex.image2d image; *)
+  (*     tid *)
+
+  (* let gl_maketex arr  =  *)
+  (*   let image = make_image arr in *)
+  (*   let tid = GlTex.gen_texture() in *)
+  (*     GlTex.bind_texture `texture_2d tid; *)
+  (*     GlTex.parameter ~target:`texture_2d (`mag_filter `nearest); *)
+  (*     GlTex.parameter ~target:`texture_2d (`min_filter `nearest);  *)
+  (*     GlTex.image2d image; *)
+  (*     tid *)
+open GL
+open Glu
+  let gl_maketex texture  = 
+    let tid = glGenTexture() in
+    glBindTexture BindTex.GL_TEXTURE_2D tid;
+    glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
+    glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST); 
+    gluBuild2DMipmaps
+      InternalFormat.GL_RGBA
+      256 256
+      GL_RGBA
+      GL_UNSIGNED_BYTE
+      texture;
+    tid
+;;
 
 end

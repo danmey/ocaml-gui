@@ -139,13 +139,13 @@ class block name (properties : properties) = object ( self : 'self )
 end
 
 open BatFloat
-class texture_preview trigger = object ( self : 'self )
+class texture_preview = object ( self : 'self )
   inherit graphics as super
   val mutable texid = None
   initializer
     window.Window.painter <- self#draw;
     (* Resource.load (); *)
-    texid <- Some (Texture.Tga.gl_maketex Texgen.texture)
+    texid <- Some (Texture.Tga.gl_maketex (Texgen.texture Texgen.op))
 
     method draw rect =
       BatOption.may (fun texid ->
@@ -153,6 +153,7 @@ class texture_preview trigger = object ( self : 'self )
         glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
         glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
         glEnable GL_TEXTURE_2D;
+        glColor3 ~r:1. ~g:1. ~b:1.;
         let x, y, w, h = Window.center_rect rect in
         glBegin GL_QUADS;
         glTexCoord2 ~s:0.0 ~t:0.0;
@@ -168,9 +169,11 @@ class texture_preview trigger = object ( self : 'self )
         
 
     method event wind ev = 
+      let open Texgen in
       match ev with
-      (* | Event.Parameters ["octaves",Event.Float oct] when wind == trigger#window -> *)
-      (*   texid <- Some (Texture.Tga.gl_maketex (Perlin.Op.array_of_texture (Perlin.Op.normalize 256 (Perlin.Op.clouds 3 oct)))); true *)
+      (* | Event.Parameters ["octaves",Event.Float o] when wind == trigger#window -> *)
+      (*   texid <- Some (Texture.Tga.gl_maketex (Texgen.texture (Clouds { octaves = int_of_float o; persistence = 0.4; }))); *)
+      (*   true *)
       | ev -> super # event wind ev
     
 end

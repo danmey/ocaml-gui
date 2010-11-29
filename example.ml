@@ -75,59 +75,77 @@ class generate_button = object (self : 'self)
 
 end
 
-let a () =
-  Gui.init
-    (fun () ->
-      (* Png_loader.load_img (Filename "ala"); *)
-      let g = new desktop in
-      let generate_button = new generate_button in
-      let control_pane = ((new fixed) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
-      let open Blocks in
-      (* let sl () = new slider (-1.0) 1.0 0.01 in *)
-      (* let sx = (new int_slider 0 5 1.0) in *)
-      (* let sy = sl () in *)
-      (* let sz = sl () in *)
-      (* let sw = sl () in *)
-      (* let graphical_pane = new sphere_view sx sy sz sw in *)
-      (* let control_pane = new frame (fixed_vertical_layout 5 25) in *)
-      let graphical_pane = new block_canvas in
-      (* let b1 = (new block "x") in *)
-      (* graphical_pane#add (b1 :> draggable); *)
-      (* b1#invalidate (Rect.rect (300,200) (80,20)); *)
-      (* let b2 = (new block "y") in *)
-      (* graphical_pane#add (b2 :> draggable); *)
-      (* b2#invalidate (Rect.rect (400,200) (80,20)); *)
-      (* let b = (new block "+") in *)
-      (* graphical_pane#add b; *)
-      (* b#invalidate (Rect.rect (400,200) (80,20)); *)
+open Blocks
+
+class texture_generator_view () =
+    let control_pane = ((new texture_preview) :> draggable)(* frame (fixed_vertical_layout 5 25) *) in
+    let graphical_pane = new block_canvas in
+    let (_, edit_properties) :: _ = properties in
+    let edit_pane = new properties edit_properties in
+    let split_control = (new splitter control_pane (property_pane :> draggable) Vertical) in
+    let w,h = Display.display_size in
+object (self)
+  inherit splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal
+  initializer
+    property_pane # add (edit_pane  :> fixed);
+end
+
+      
+
+(* let a () = *)
+(*   Gui.init *)
+(*     (fun () -> *)
+(*       (\* Png_loader.load_img (Filename "ala"); *\) *)
+(*       let g = new desktop in *)
+(*       let generate_button = new generate_button in *)
+(*       let control_pane = ((new texture_preview generate_button) :> draggable)(\* frame (fixed_vertical_layout 5 25) *\) in *)
+(*       let open Blocks in *)
+(*       (\* let sl () = new slider (-1.0) 1.0 0.01 in *\) *)
+(*       (\* let sx = (new int_slider 0 5 1.0) in *\) *)
+(*       (\* let sy = sl () in *\) *)
+(*       (\* let sz = sl () in *\) *)
+(*       (\* let sw = sl () in *\) *)
+(*       (\* let graphical_pane = new sphere_view sx sy sz sw in *\) *)
+(*       (\* let control_pane = new frame (fixed_vertical_layout 5 25) in *\) *)
+(*       let graphical_pane = new block_canvas in *)
+(*       (\* let b1 = (new block "x") in *\) *)
+(*       (\* graphical_pane#add (b1 :> draggable); *\) *)
+(*       (\* b1#invalidate (Rect.rect (300,200) (80,20)); *\) *)
+(*       (\* let b2 = (new block "y") in *\) *)
+(*       (\* graphical_pane#add (b2 :> draggable); *\) *)
+(*       (\* b2#invalidate (Rect.rect (400,200) (80,20)); *\) *)
+(*       (\* let b = (new block "+") in *\) *)
+(*       (\* graphical_pane#add b; *\) *)
+(*       (\* b#invalidate (Rect.rect (400,200) (80,20)); *\) *)
     
-      (* edit_pane#add (sx :> fixed); *)
-      (* edit_pane#add (sy :> fixed); *)
-      (* edit_pane#add (sz :> fixed); *)
-      (* edit_pane#add (sw :> fixed); *)
-      let (_, edit_properties) :: _ = properties in
-      let edit_pane = new properties edit_properties in
-      edit_pane#add (generate_button :> fixed);
-      property_pane # add (edit_pane  :> fixed);
-      let split_control = (new splitter control_pane (property_pane :> draggable) Vertical) in
-      let split_display = ((new splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal) :> graphical) in
-      g#add split_display;
-      let w,h = Display.display_size in
-      split_display#invalidate (Rect.rect (10,10) (w-20,h-20));
-      g#invalidate (Rect.rect (0,0) (w,h));
-      ())
+(*       (\* edit_pane#add (sx :> fixed); *\) *)
+(*       (\* edit_pane#add (sy :> fixed); *\) *)
+(*       (\* edit_pane#add (sz :> fixed); *\) *)
+(*       (\* edit_pane#add (sw :> fixed); *\) *)
+(*       let (_, edit_properties) :: _ = properties in *)
+(*       let edit_pane = new properties edit_properties in *)
+(*       edit_pane#add (generate_button :> fixed); *)
+(*       property_pane # add (edit_pane  :> fixed); *)
+(*       let split_control = (new splitter control_pane (property_pane :> draggable) Vertical) in *)
+(*       let split_display = ((new splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal) :> graphical) in *)
+(*       g#add split_display; *)
+(*       let w,h = Display.display_size in *)
+(*       split_display#invalidate (Rect.rect (10,10) (w-20,h-20)); *)
+(*       g#invalidate (Rect.rect (0,0) (w,h)); *)
+(*       ()) *)
 
 let b () =
   Gui.init
     (fun () ->
       (* Png_loader.load_img (Filename "ala"); *)
       let g = new desktop in
-      let generate_button = new generate_button in
+      let tgv = (new texture_generator_view() :> graphical) in
+       g#add tgv;
       let w,h = Display.display_size in
-      generate_button#invalidate (Rect.rect (0,0) (w-0,h-0));
-      g#invalidate (Rect.rect (100,100) (22,24));
+       tgv#invalidate (Rect.rect (10,10) (w-20,h-20));
+       g#invalidate (Rect.rect (0,0) (w,h)); 
       ())
 ;;
 
-a()
+b()
 ;;

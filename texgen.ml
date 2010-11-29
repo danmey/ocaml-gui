@@ -1,4 +1,4 @@
-
+let texsize = 256
 
 (*type result = Val of float | RGB of (float * float * float)*)
 
@@ -79,18 +79,18 @@ type operator =
   | Modulate of operator list
   | Clouds of cloud_params
   | Clamp of operator
-  | Transform of operator * transform_params
-  | Mask of operator * mask_mode
-  | Mix of operator * operator * mix_mode
-  | Light of operator * light_params
-  | Distort of operator * operator * operator * distort_mode
+  | Transform of transform_params * operator
+  | Mask of mask_mode * operator
+  | Mix of mix_mode * operator * operator
+  | Light of light_params * operator
+  | Distort of distort_mode * operator * operator * operator
   | Flat of flat_params
   | Glow of glow_params
-  | Hsv of operator * operator * operator * hsv_params
+  | Hsv of hsv_params * operator * operator * operator
   | Rgb of rgb_params
   | Pixels of pixels_params
   | Blur of blur_params
-  | Phi of phi_params
+  | Phi of phi_params * operator
 
 
 module Layer = struct
@@ -134,9 +134,13 @@ let noise =
 
 let lift f gen (x, y) = f (gen (x, y))
 
-let gradient_u = Memo.make (lift sin noise)
+let gradient_u = Memo.make (lift (fun x -> (sin x +. 1.0) *. 0.5) noise)
 
-let gradient_v = Memo.make (lift cos noise)
+let gradient_v = Memo.make (lift (fun x -> (cos x +. 1.0) *. 0.5) noise)
+
+let gradient_u = Memo.make (lift (fun x -> (sin x)) noise)
+
+let gradient_v = Memo.make (lift (fun x -> (cos x)) noise)
 
 let colorize color_lst layer =
   let interp a b f = (b-.a) *. f +. a in
@@ -190,9 +194,9 @@ let clouds { octaves; persistence } =
   let clouds_a = gen_list [8./.256.] octaves in
   let clouds = List.map (fun a -> cloud a a) clouds_a in
   fun (x, y) -> 
-    fst (List.fold_left 
+    fst ((List.fold_left 
            (fun (acc,p) cl -> 
-             acc +. p *. (cl (x, y)), p *. persistence)
+             acc +. p *. (cl (x, y)), p *. persistence))
            (0.0, persistence) clouds)
       
 let wrap c = c land (texsize - 1)
@@ -363,23 +367,23 @@ let rec value op =
       | Clamp op ->
         let clamp v = if v < 0. then 0. else if v > 1.0 then 1.0 else v in
         fun point -> clamp (value op point)
-      | Transform (op, params) -> transform (value op) params
-      | Mask (op, Inner (a, b)) ->
+      | Transform (params, op) -> transform (value op) params
+      | Mask (Inner (a, b), op) ->
         let mask v = if v >= a && v < b then v else 0. in
         fun point -> mask (value op point)
-      | Mask (op, Outer (a, b)) ->
+      | Mask (Outer (a, b), op) ->
         let open BatFloat in
         let mask v = if v < a || v > b then v else 0. in
         fun point -> mask (value op point)
-      | Mix (op1, op2, mode) ->
+      | Mix (mode, op1, op2) ->
         let open BatFloat in
         let op = match mode with Lower -> ( < ) | Greater -> ( >= ) in
         fun point ->
         let v1 = value op1 point in
         let v2 = value op2 point in
         if op v1 v2 then v1 else v2
-      | Light (op, params) -> light (value op) params
-      | Distort (op1, op2, op3, Radial) -> distort (value op1) (value op2) (value op3) Radial
+      | Light (params, op) -> light (value op) params
+      | Distort (Radial,op1, op2, op3) -> distort (value op1) (value op2) (value op3) Radial
       | Flat { fx; fy; fw; fh; fg; bg; } ->
         fun (x,y) ->
           if x >= fx && x < fx+.fw
@@ -389,6 +393,7 @@ let rec value op =
         let v' = sqrt ((x-.x0)*.(x-.x0)*.xr +. (y-.y0)*.(y-.y0)*.yr) in
         let v = BatFloat.pow v' atten in
         v
+      | Phi ({ base; scale; }, op) -> fun (x, y) -> scale *. (value op (x,y) +. base)
      
       (* | Hsv (op1, op2, op3, params) -> hsv (value op1) (value op2) (value op3) params  *)
 
@@ -404,17 +409,31 @@ let layer2 op x y =
   let v = value op ((float y), (float x)) in
   (v,v,v)
 
+
+let tree =
+  Clamp (Phi ({base = 0.15; scale = 1.6},
+       (Clouds { octaves = 4; persistence = 0.5; })));;
+
+module A = Bigarray.Genarray;;
+
 let texture op = 
-  let ar = Array.make (256 * 256) (0.,0.,0.) in
+  let ar = A.create Bigarray.int8_unsigned Bigarray.c_layout [|256;256;4|] in
   for y = 0 to 256 - 1 do
     for x = 0 to 256 - 1 do
       let v = value op ((float y /. 256.0), (float x /. 256.0)) in
-      ar.(y*256+x) <- (v,v,v);
+      let v = int_of_float (v *. 255.0) in
+      A.set ar [|y;x;0|] v;
+      A.set ar [|y;x;1|] v;
+      A.set ar [|y;x;2|] v;
+      A.set ar [|y;x;3|] 255;
     done
   done;
   ar
 ;;
-TGA.write "test.tga" 256 (layer (Clouds { octaves = 3; persistence = 1.0; }))
+
+
+
+(* TGA.write "test.tga" 256 (layer tree) *)
 
 let op =     
   Add [Glow { x0 = 0.0;
@@ -429,4 +448,5 @@ let op =
            yr = 1.0; }]
 ;;
 
+let op = tree;;
 (* TGA.write "test.tga" 256 (layer op) *)
