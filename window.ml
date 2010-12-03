@@ -35,7 +35,7 @@ let shelf rect = desktop.pos <- rect
 open BatInt
 
 let with_scisor rect f =
-  let screen_width, screen_height = Display.display_size in
+  let screen_width, screen_height = Display.display_size () in
   let coords {Rect.x; y; w; h; } =
     let open BatInt in
         (x, screen_height-y-h, w, h)
@@ -48,7 +48,7 @@ let with_scisor rect f =
     f ();
     glDisable GL_SCISSOR_TEST
 
-let desktop_rect = Rect.rect (0,0) Display.display_size
+let desktop_rect () = Rect.rect (0,0) (Display.display_size ())
 
 let rec draw_window window =
   let rec draw_client_window rect { pos; children; painter } =
@@ -57,7 +57,7 @@ let rec draw_window window =
       painter client_rect;
       List.iter (draw_client_window (together rect client_rect)) children)
   in
-  draw_client_window desktop_rect window
+  draw_client_window (desktop_rect ()) window
 
 let draw_desktop () = 
   draw_window desktop

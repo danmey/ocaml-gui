@@ -39,21 +39,23 @@ let with_view f =
   glMatrixMode GL_PROJECTION;
   glPushMatrix();
   glLoadIdentity ();
-  let w,h = Display. display_size in
+  let w,h = Display.display_size () in
     glViewport ~x:0 ~y:0 ~width:w ~height:h;
     glOrtho ~left:0. ~right:(float w) ~bottom:(float h) ~top:0.0 ~near:0.0 ~far:1.;
-    let res = f() in
+    let res = f () in
     glMatrixMode GL_PROJECTION;
-    glPopMatrix();
+    glPopMatrix ();
     glMatrixMode GL_MODELVIEW;
     res
 
 let display () =
   glDisable GL_SCISSOR_TEST;
   (* glClearColor ~r:(214./255.) ~g:(214./.255.) ~b:(206./.255.) ~a:0.0; *)
-  glClearColor ~r:1. ~g:1. ~b:1. ~a:1.0;
+  glClearColor ~r:1. ~g:1. ~b:1. ~a:1.;
   glClear [ GL_COLOR_BUFFER_BIT; GL_DEPTH_BUFFER_BIT];
-  gluPerspective ~fovy:60. ~aspect:1.6 ~zNear:0.1 ~zFar:100.;
+  let w,h = Display.display_size () in
+  let aspect = float w /. float h in
+  gluPerspective ~fovy:60. ~aspect ~zNear:0.1 ~zFar:100.;
   glDisable GL_DEPTH_TEST ;
   glDisable GL_CULL_FACE ;
   glMatrixMode GL_PROJECTION;
@@ -61,9 +63,7 @@ let display () =
   glMatrixMode GL_MODELVIEW;
   glLoadIdentity ();
   with_view (fun () -> Window.draw_desktop ());
-  let w,h = Display. display_size in
   Glut.glutSwapBuffers ();
-  ignore(Unix.select [] [] [] 0.001)
 ;;
 
 let on_mouse_motion ~x ~y = Event.mouse_motion_handler ~x ~y
@@ -74,16 +74,13 @@ let on_mouse  ~button ~state ~x ~y =
   Event.mouse_handler ~button ~state ~x ~y
 
 
-let init build =
-  ignore( Glut.glutInit Sys.argv );
-  Glut.glutInitDisplayMode [Glut.GLUT_RGBA; Glut.GLUT_DEPTH; Glut.GLUT_DOUBLE];
-  ignore (Glut.glutCreateWindow ~title:"OpenGL Demo");
+let init build reshape =
   build ();
-  Window.shelf (Rect.rect (0,0) Display.display_size);
   Glut.glutDisplayFunc display;
   Glut.glutIdleFunc Glut.glutPostRedisplay;
   Glut.glutMotionFunc on_mouse_motion;
   Glut.glutMouseFunc on_mouse;
+  Glut.glutReshapeFunc reshape;
   Glut.glutMainLoop ()
 ;;
 

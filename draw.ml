@@ -123,7 +123,7 @@ let render_bitmap_string x y font string =
   glMatrixMode GL_PROJECTION;
   glPushMatrix ();
   glLoadIdentity ();
-  let w,h = Display.display_size in
+  let w,h = Display.display_size () in
   let right, top = float w, float h in
   Glu.gluOrtho2D ~left:0. ~right:right ~top:top ~bottom:0.;
   glMatrixMode GL_MODELVIEW;

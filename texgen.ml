@@ -91,7 +91,7 @@ type operator =
   | Pixels of pixels_params
   | Blur of blur_params
   | Phi of phi_params * operator
-
+  | Out
 
 module Layer = struct
   let make f = f

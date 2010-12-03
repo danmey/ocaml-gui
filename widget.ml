@@ -331,8 +331,8 @@ end and draggable = object ( self : 'self )
   inherit interactive as super
   val mutable dragged_pos = (0,0)
   val mutable parent : canvas option = None
-  method value = Event.Float 0.
   method key = ""
+  method value = Event.Float 0.
   method set_parent c = parent <- Some c
   method name = ""
 

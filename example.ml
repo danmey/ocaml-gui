@@ -83,7 +83,7 @@ class texture_generator_view () =
     let (_, edit_properties) :: _ = properties in
     let edit_pane = new properties edit_properties in
     let split_control = (new splitter (control_pane :> draggable) (property_pane :> draggable) Vertical) in
-    let w,h = Display.display_size in
+    let w,h = Display.display_size () in
 object (self)
   inherit splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal
   initializer
@@ -91,20 +91,42 @@ object (self)
 
   method event wind = function
     | Event.Custom ("slide_end", _, _) -> 
-      let ws = edit_pane # widgets in
-      let params = 
-        List.map (fun (_,w) -> 
-          print_endline w#key; w # key, w # value) ws in
-      let propf name = let Event.Float v = List.assoc name params in v in
-      let propi name = let Event.Int v = List.assoc name params in v in
-      let open Texgen in
-      let op = Texgen.Clouds { octaves = propi "octaves"; persistence = propf "persistence"} in
-      Printf.printf "octaves: %d\n" (propi "octaves"); flush stdout;
-      let ti = Texture.Tga.gl_maketex (texture op) in
-      control_pane # set_image ti;
-      true
+      let op_of_properties edit_pane =
+        let ws = edit_pane # widgets in
+        let params = 
+          List.map (fun (_,w) -> 
+          print_endline w#key; w # key, w # value) ws 
+        in
+        params
+      in
+        let open Texgen in
+            let stack = graphical_pane#layout in
+            let loop = function
+              | a :: xs -> 
+                let params = op_of_properties a in
+                List.iter (fun (x,_) -> Printf.printf "params: %s\n" x; flush stdout) params;
+                let propf name = let Event.Float v = print_endline name; flush stdout;List.assoc name params in v in
+                let propi name = let Event.Int v = print_endline name; flush stdout;List.assoc name params in v in
+                let rec matchop = function
+                  | "perlin" -> 
+                    Clouds { octaves = propi "octaves"; 
+                             persistence = propf "persistence"}
+                  | "light" ->
+                    (match xs with
+                      | x :: lst ->
+                        Light ({ lx = propf "lx"; 
+                                 ly = propf "ly";
+                                 ldx = propf "ldx";
+                                 ldy = propf "ldy"; }, (matchop (x#key))))
+                in
+                matchop a # key
+            in
+            (* let op = loop stack in *)
+            (* let ti = Texture.Tga.gl_maketex (texture op) in *)
+            (* control_pane # set_image ti; *)
+            true
     | _ -> false
-    
+      
 
 end
 
@@ -153,16 +175,18 @@ end
 (*       ()) *)
 
 let b () =
+  let g = new desktop in
+  let tgv = (new texture_generator_view() :> graphical) in
   Gui.init
     (fun () ->
       (* Png_loader.load_img (Filename "ala"); *)
-      let g = new desktop in
-      let tgv = (new texture_generator_view() :> graphical) in
        g#add tgv;
-      let w,h = Display.display_size in
-       tgv#invalidate (Rect.rect (10,10) (w-20,h-20));
-       g#invalidate (Rect.rect (0,0) (w,h)); 
       ())
+    (fun ~width ~height ->
+       Window.shelf (Rect.rect (0,0) (width,height));
+       tgv#invalidate (Rect.rect (10,10) (width-20,height-20));
+       g#invalidate (Rect.rect (0,0) (width,height)))
+
 ;;
 
 b()

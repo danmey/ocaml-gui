@@ -2,9 +2,8 @@ open GL
 open Glu
 let resources =
   ["button-normal", ("button_round_blue.png", ref None);
-   "button-push", ("button_round_blue_push.png", ref None);
-   "panel-bg", ("panel-bg.png", ref None);
-   "button-menu-focused", ("button-menu-focused.png", ref None)]
+   "button-push", ("button_round_blue_push.png", ref None);]
+
 
 let load_texture ~filename =
   let texture, width, height, internal_format, pixel_data_format =

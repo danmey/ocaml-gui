@@ -105,7 +105,8 @@ class block name (properties : properties) = object ( self : 'self )
                      p,
                      ""));
     super # mouse_down b p
-
+      
+  method key = name
   method focus is = focus <- is
 
   (* method paint state rect = *)
@@ -220,9 +221,16 @@ class block_canvas = object ( self : 'self)
           | a :: b -> stack_loop ((a @ [x]) :: b) cur_y xs)
       | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs
       | [] -> acc in
-    stack_loop [[]] (List.hd sorted).Rect.y
+    let lst = stack_loop [[]] (List.hd sorted).Rect.y sorted in
+    let rec loop = function
+      | (a::_)::xs -> (snd (List.assq a widget_rects)) :: loop xs
+      (* | a :: [] -> print_endline ("top: " ^ (snd (List.assq a widget_rects))#key) *)
+      | [] -> []
+    in
+    loop lst
+      
     
-    (* let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in *)
+  (* let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in *)
     
     (* let rec loop = function *)
     (*   | x :: xs -> String.concat "\t" (List.map (fun rect -> (List.assoc rect widget_rects)#name) x) :: (loop xs) *)
