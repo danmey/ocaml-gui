@@ -78,7 +78,7 @@ end
 open Blocks
 
 class texture_generator_view () =
-    let control_pane = new texture_preview(* frame (fixed_vertical_layout 5 25) *) in
+    let control_pane = new texture_preview(* frame (Layout.fixed_vertical 5 25) *) in
     let graphical_pane = new block_canvas in
     let (_, edit_properties) :: _ = properties in
     let edit_pane = new properties edit_properties in
@@ -138,7 +138,7 @@ end
 (*       (\* Png_loader.load_img (Filename "ala"); *\) *)
 (*       let g = new desktop in *)
 (*       let generate_button = new generate_button in *)
-(*       let control_pane = ((new texture_preview generate_button) :> draggable)(\* frame (fixed_vertical_layout 5 25) *\) in *)
+(*       let control_pane = ((new texture_preview generate_button) :> draggable)(\* frame (Layout.fixed_vertical 5 25) *\) in *)
 (*       let open Blocks in *)
 (*       (\* let sl () = new slider (-1.0) 1.0 0.01 in *\) *)
 (*       (\* let sx = (new int_slider 0 5 1.0) in *\) *)
@@ -146,7 +146,7 @@ end
 (*       (\* let sz = sl () in *\) *)
 (*       (\* let sw = sl () in *\) *)
 (*       (\* let graphical_pane = new sphere_view sx sy sz sw in *\) *)
-(*       (\* let control_pane = new frame (fixed_vertical_layout 5 25) in *\) *)
+(*       (\* let control_pane = new frame (Layout.fixed_vertical 5 25) in *\) *)
 (*       let graphical_pane = new block_canvas in *)
 (*       (\* let b1 = (new block "x") in *\) *)
 (*       (\* graphical_pane#add (b1 :> draggable); *\) *)

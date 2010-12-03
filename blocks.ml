@@ -41,7 +41,7 @@ type property = string * property_type
 (*   (\*   Custom ( *\) *)
 (* end     *)
 class properties props = object (self : 'self)
-  inherit frame (fixed_vertical_layout 5 25)
+  inherit frame (Layout.fixed_vertical 5 25)
     
   initializer 
     self # set_properties props;
@@ -176,7 +176,7 @@ class texture_preview = object ( self : 'self )
     
 end
 
-let property_pane = new frame fill_layout
+let property_pane = new frame Layout.fill
 
 let properties = 
   ["perlin",[

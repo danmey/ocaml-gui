@@ -621,35 +621,36 @@ class int_slider name left right step = object ( self : 'self )
   (* method value = value *)
 end
 
-
+module Layout = struct
 type layout = Rect.t -> Rect.t -> int -> int -> Rect.t
-let horizontal_layout spacing parent_rect _ c i =
+let horizontal spacing parent_rect _ c i =
   let (w,h) = Rect.size parent_rect in
   let s = w / c in
     Rect.rect ((i * s)+spacing, 0) (s-2*spacing,h)
 
-let vertical_layout spacing parent_rect _ c i =
+let vertical spacing parent_rect _ c i =
   let (w,h) = Rect.size parent_rect in
   let s = h / c in
     Rect.rect (0, (i * s)+spacing) (w, s-2*spacing)
 
-let fixed_vertical_layout spacing height parent_rect d c i =
+let fixed_vertical spacing height parent_rect d c i =
   let (w,h) = Rect.size parent_rect in
   if (height + 2 * spacing) * c > h then
-    vertical_layout spacing parent_rect d c i
+    vertical spacing parent_rect d c i
   else
     let ofs = (i * (height + 2 * spacing)) + spacing in
     Rect.rect (spacing, ofs) (w-spacing*2,height)
 
-let fixed_horizontal_layout spacing width parent_rect d c i =
+let fixed_horizontal spacing width parent_rect d c i =
   let (w,h) = Rect.size parent_rect in
   if (width + 2 * spacing) * c > w then
-    horizontal_layout spacing parent_rect d c i
+    horizontal spacing parent_rect d c i
   else
     let ofs = (i * (width + 2 * spacing)) + spacing in
     Rect.rect (ofs, spacing) (width, h-spacing*2)
 
-let fill_layout parent_rect _ _ _ = Rect.rect (0,0) (Rect.size parent_rect)
+let fill parent_rect _ _ _ = Rect.rect (0,0) (Rect.size parent_rect)
+end
 
 class frame layout = object ( self : 'self )
   inherit canvas as super
@@ -681,7 +682,7 @@ end
 
 open BatInt
 class menu pos items = object ( self : 'self)
-  inherit frame (fixed_vertical_layout 5 20)
+  inherit frame (Layout.fixed_vertical 5 20)
   val mutable widget_items : (draggable * string) list = []
   initializer
   let max_width = ref 0 in

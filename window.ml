@@ -14,32 +14,25 @@ let center_coord c = float c + 0.5
 
 let center_rect = lift22 center_coord float
 
+let default_painter _ = ()
 
-let default_painter rect =
-   let x, y, w, h = center_rect rect in
-   glBegin GL_LINE_LOOP;
-   glColor3 ~r:1. ~g:1. ~b:1.;
-   glVertex3 ~x ~y ~z:0.;
-   glVertex3 ~x:(x + w) ~y ~z:0.;
-   glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
-   glVertex3 ~x ~y:(y + h) ~z:0.;
-   glEnd ();
-   ()
-
-let default rect = { pos = rect; children = []; painter = default_painter }
+let default rect = { pos = rect; 
+                     children = []; 
+                     painter = default_painter }
 
 let empty_window () = default Rect.o
+
 let desktop = default Rect.o
 
 let shelf rect = desktop.pos <- rect
 open BatInt
 
 let with_scisor rect f =
-  let screen_width, screen_height = Display.display_size () in
-  let coords {Rect.x; y; w; h; } =
-    let open BatInt in
+  let open BatInt in
+      let screen_width, screen_height = Display.display_size () in
+      let coords { Rect.x; y; w; h; } =
         (x, screen_height-y-h, w, h)
-    in
+      in
     glMatrixMode GL_MODELVIEW;
     glLoadIdentity ();
     let x, y, width, height = coords rect in
