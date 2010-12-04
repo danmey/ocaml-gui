@@ -52,9 +52,9 @@ class properties props = object (self : 'self)
   method set_properties = List.iter
     (function
       | (name, Float { min; max; default; step }) -> 
-        self # add ((new slider name min max step) :> draggable)
+        self # add (float_slider ~min ~max ~step name)
       | (name, Int { min; max; default; step }) -> 
-        self # add ((new int_slider name min max step) :> draggable))
+        self # add (int_slider ~min ~max ~step name))
     
   (* method property_changed widget value = *)
   (*   () *)

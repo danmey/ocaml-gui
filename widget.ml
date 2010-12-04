@@ -380,7 +380,8 @@ end
 
 open BatInt
 
-class slider name left right step = object ( self : 'self )
+class slider name left right step (change : slider -> unit)
+  = object ( self : 'self )
   inherit draggable_constrained Horizontal as super
   val mutable value = 0.
   val mutable step = step
@@ -409,7 +410,7 @@ class slider name left right step = object ( self : 'self )
     Event.run_events self # window (Event.Custom ("slide_end", (0,0), ""));
     true
       
-  method slide_end value = ()
+  method slide_end value = change (self:>slider)
 
   method caption value = 
     Printf.sprintf "%s: %2.2f" name value
@@ -425,12 +426,14 @@ let round v =
     snd (modf v)
 
 open BatInt
-class int_slider name left right step = object ( self : 'self )
+class int_slider name left right step change
+  = object ( self : 'self )
   inherit slider 
     name
     (float_of_int left)
     (float_of_int right)
     step
+    change
 
   method value = Event.Int (int_of_float (round value))
   method drag_end =
@@ -446,6 +449,22 @@ class int_slider name left right step = object ( self : 'self )
   (* method value = value *)
 end
 
+let float_slider 
+    ?min:(min=0.) 
+    ?max:(max=1.)
+    ?step:(step=0.01)
+    ?change:(change=fun (w:slider) -> ())
+    name
+    = (new slider name min max step change :> draggable)
+
+let int_slider 
+    ?min:(min=0) 
+    ?max:(max=100)
+    ?step:(step=1.)
+    ?change:(change=fun (w:slider) -> ()) 
+    name
+    = (new int_slider name min max step change  :> draggable)
+  
 module Defaults = struct
   let widget_height = 25
   let widget_width = 25
