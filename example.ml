@@ -77,58 +77,54 @@ end
 
 open Blocks
 
-class texture_generator_view () =
+let texture_generator_view () =
     let control_pane = new texture_preview(* frame (Layout.fixed_vertical 5 25) *) in
     let graphical_pane = new block_canvas in
-    let (_, edit_properties) :: _ = properties in
-    let edit_pane = new properties edit_properties in
-    let split_control = (new splitter (control_pane :> draggable) (property_pane :> draggable) Vertical) in
-    let w,h = Display.display_size () in
-object (self)
-  inherit splitter (split_control :> draggable) (graphical_pane  :> draggable) Horizontal
-  initializer
-    property_pane # add (edit_pane  :> fixed);
-
-  method event wind = function
-    | Event.Custom ("slide_end", _, _) -> 
+    let change _ =
       let op_of_properties edit_pane =
         let ws = edit_pane # widgets in
         let params = 
           List.map (fun (_,w) -> 
-          print_endline w#key; w # key, w # value) ws 
+            print_endline w#key; w # key, w # value) ws 
         in
         params
       in
-        let open Texgen in
-            let stack = graphical_pane#layout in
-            let loop = function
-              | a :: xs -> 
-                let params = op_of_properties a in
-                List.iter (fun (x,_) -> Printf.printf "params: %s\n" x; flush stdout) params;
-                let propf name = let Event.Float v = print_endline name; flush stdout;List.assoc name params in v in
-                let propi name = let Event.Int v = print_endline name; flush stdout;List.assoc name params in v in
-                let rec matchop = function
-                  | "perlin" -> 
-                    Clouds { octaves = propi "octaves"; 
-                             persistence = propf "persistence"}
-                  | "light" ->
-                    (match xs with
-                      | x :: lst ->
-                        Light ({ lx = propf "lx"; 
-                                 ly = propf "ly";
-                                 ldx = propf "ldx";
-                                 ldy = propf "ldy"; }, (matchop (x#key))))
-                in
-                matchop a # key
+      let open Texgen in
+          let stack = graphical_pane#layout in
+          let loop = function
+            | a :: xs -> 
+              let params = op_of_properties a in
+              List.iter (fun (x,_) -> Printf.printf "params: %s\n" x; flush stdout) params;
+              let propf name = let Event.Float v = print_endline name; flush stdout;List.assoc name params in v in
+              let propi name = let Event.Int v = print_endline name; flush stdout;List.assoc name params in v in
+              let rec matchop = function
+                | "perlin" -> 
+                  Clouds { octaves = propi "octaves"; 
+                           persistence = propf "persistence"}
+                | "light" ->
+                  (match xs with
+                    | x :: lst ->
+                      Light ({ lx = propf "lx"; 
+                               ly = propf "ly";
+                               ldx = propf "ldx";
+                               ldy = propf "ldy"; }, (matchop (x#key))))
+              in
+              matchop a # key
             in
             (* let op = loop stack in *)
-            (* let ti = Texture.Tga.gl_maketex (texture op) in *)
+            ()
+      in
+          (* let ti = Texture.Tga.gl_maketex (texture op) in *)
             (* control_pane # set_image ti; *)
-            true
-    | _ -> false
-      
+        (* let op = loop stack in *)
+          (* let ti = Texture.Tga.gl_maketex (texture op) in *)
+          (* control_pane # set_image ti; *)
+      let (_, edit_properties) :: _ = properties_definition in
+      let edit_pane = properties edit_properties ~change in
+      let split_control = splitter ~first:(control_pane :> draggable) ~second:(property_pane :> draggable) Vertical in
+      property_pane # add (edit_pane  :> fixed);
+      splitter ~first:split_control ~second:graphical_pane Horizontal
 
-end
 
       
 
@@ -176,7 +172,7 @@ end
 
 let b () =
   let g = new desktop in
-  let tgv = (new texture_generator_view() :> graphical) in
+  let tgv = ((texture_generator_view()) :> graphical) in
   Gui.init
     (fun () ->
       (* Png_loader.load_img (Filename "ala"); *)

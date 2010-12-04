@@ -40,25 +40,28 @@ type property = string * property_type
 (*   (\* method slide_end value =  *\) *)
 (*   (\*   Custom ( *\) *)
 (* end     *)
-class properties props = object (self : 'self)
+class properties props change = object (self : 'self)
   inherit frame (Layout.vertical)
     
-  initializer 
-    self # set_properties props;
+  initializer
+    List.iter
+      (function
+      | (name, Float { min; max; default; step }) -> 
+        self # add (float_slider ~min ~max ~step ~change name)
+      | (name, Int { min; max; default; step }) -> 
+        self # add (int_slider ~min ~max ~step ~change name))
+      props
+
   method delete_properties =
     List.iter (fun (_,widget) -> Window.remove self # window widget # window) widgets;
     widgets <- []
 
-  method set_properties = List.iter
-    (function
-      | (name, Float { min; max; default; step }) -> 
-        self # add (float_slider ~min ~max ~step name)
-      | (name, Int { min; max; default; step }) -> 
-        self # add (int_slider ~min ~max ~step name))
-    
-  (* method property_changed widget value = *)
-  (*   () *)
 end
+
+let properties
+    ?change:(change=(fun _ -> ()))
+    definition =
+  new properties definition change
     
 (* end and block name = object ( self : 'self ) *)
 class block name (properties : properties) = object ( self : 'self ) 
@@ -178,7 +181,7 @@ end
 
 let property_pane = new frame Layout.fill
 
-let properties = 
+let properties_definition = 
   ["perlin",[
     "persistence", Float { min = 0.; max = 3.; default = 0.25; step = 0.01 };
     "octaves", Int { min=1; max=8; default=1; step = 0.2 }; ];
@@ -201,7 +204,7 @@ class block_canvas = object ( self : 'self)
     match button with
       | Event.Right ->
         last_mouse_pos <- pos;
-        let names, _ = List.split properties in
+        let names, _ = List.split properties_definition in
         let m = new menu pos names in
         self # add (m :> draggable);
         true
@@ -250,8 +253,8 @@ class block_canvas = object ( self : 'self)
     method event wind = 
       function
       | Event.Custom ("menu_item", _, what) -> 
-        let properties = List.assq what properties in
-        let properties_pane = new properties properties in
+        let definition = List.assq what properties_definition in
+        let properties_pane = properties definition in
         property_pane # remove_all;
         property_pane # add (properties_pane :> draggable);
         property_pane # revalidate;

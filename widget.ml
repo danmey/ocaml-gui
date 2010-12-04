@@ -299,6 +299,8 @@ class splitter first second constr1 = object ( self : 'self )
           
 end
 
+let splitter ~first ~second constr = 
+  new splitter (first :> draggable) (second :> draggable) constr
 
 type 'a element_tree = Node of string * 'a * 'a element_tree list
 

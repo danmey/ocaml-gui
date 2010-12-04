@@ -75,6 +75,11 @@ let on_mouse  ~button ~state ~x ~y =
 
 
 let init build reshape =
+  if not !Display.inited then
+    (ignore( Glut.glutInit Sys.argv );
+     Glut.glutInitDisplayMode [Glut.GLUT_RGBA; Glut.GLUT_DEPTH; Glut.GLUT_DOUBLE];
+     ignore (Glut.glutCreateWindow ~title:"OpenGL Demo");
+     Display.inited := true);
   build ();
   Glut.glutDisplayFunc display;
   Glut.glutIdleFunc Glut.glutPostRedisplay;
