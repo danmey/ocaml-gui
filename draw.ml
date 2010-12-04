@@ -43,6 +43,8 @@ module Rect = struct
   let string_of_rect r = Printf.sprintf "Rect(%d,%d,%d,%d)" r.x r.y r.w r.h
   let lift4 f { x; y; w; h; } = f x, f y, f w, f h
   let lift22 f g  { x; y; w; h; } = f x, f y, g w,g h
+  let coords { x; y; w; h } = x,y,w,h
+  let coordsf { x; y; w; h } = float x, float y, float w, float h
 end
 module Draw = struct
   type t =

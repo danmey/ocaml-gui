@@ -41,7 +41,7 @@ type property = string * property_type
 (*   (\*   Custom ( *\) *)
 (* end     *)
 class properties props = object (self : 'self)
-  inherit frame (Layout.fixed_vertical 5 25)
+  inherit frame (Layout.vertical)
     
   initializer 
     self # set_properties props;
@@ -152,7 +152,7 @@ class texture_preview = object ( self : 'self )
         glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
         glEnable GL_TEXTURE_2D;
         glColor3 ~r:1. ~g:1. ~b:1.;
-        let x, y, w, h = Window.center_rect rect in
+        let x, y, w, h = Rect.coordsf rect in
         glBegin GL_QUADS;
         glTexCoord2 ~s:0.0 ~t:0.0;
         glVertex3 ~x ~y ~z:0.;

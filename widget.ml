@@ -1,251 +1,97 @@
 open Draw
 open GL
-open BatFloat
 
 type state = Normal | Pressed | Dragged
 
-(* let c r g b = glColor3 ~r:(float r/.255.) ~g:(float g/.255.) ~b:(float b/.255.) *)
+(* let center_coord c = float c + 0.5 *)
+(* let center_rect = Rect.lift22 center_coord float *)
+
 let button_painter state rect =
-  let x, y, w, h = Window.center_rect rect in
-  (* Should use skinning instead *)
-  (* match state with *)
-  (*   | Normal -> *)
   let tw,th = 32, 32 in
-  let tcx i = (float i) /. float tw in
-  let tcy i = (float i) /. float th in
-
-        let x, y, w, h = Window.center_rect rect in
-        let x, y, w, h = int_of_float x, int_of_float y, int_of_float w, int_of_float h in
-
-        let quad (x, y) (w, h) (xt,yt) (wt, ht)  =
-          let x,y,w,h = 
-            float_of_int x,
-            float_of_int y,
-            float_of_int w,
-            float_of_int h
+  let tcx i = float i /. float tw in
+  let tcy i = float i /. float th in
+  let x, y, w, h = Rect.coords rect in
+  let quad (x, y) (w, h) (xt,yt) (wt, ht) =
+    let open BatFloat in
+    let x,y,w,h = 
+      float x,
+      float y,
+      float w,
+      float h
           in
-          glColor3 ~r:1. ~g:1. ~b:1.;
-          glTexCoord2 ~s:(tcx xt) ~t:(tcy yt);
-          glVertex3 ~x ~y ~z:0.;
-          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy yt);
-          glVertex3 ~x:(x + w) ~y ~z:0.;
-          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy BatInt.(yt+ht));
-          glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
-          glTexCoord2 ~s:(tcx xt) ~t:(tcy BatInt.(yt+ht));
-          glVertex3 ~x:x ~y:(y + h) ~z:0.
-        in
-        let open BatInt in
-            let texid = match state with 
-              | Normal -> Resource.get "button-normal"
-              | Dragged -> Resource.get "button-push" 
-              | _ -> Resource.get "button-normal"
-            in
-            glEnable GL_TEXTURE_2D;
-            glEnable GL_BLEND;
-            glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
-            glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid;
-            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
-            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
-            let draw_tex (x,y) (w,h) (tw,th)  b = 
-              let b2 = b * 2 in
-              quad (x+b, y)     (w-b2, b) (b, 0) (tw-b2, b);
-              quad (x+b, y+h-b) (w-b2, b) (b, th-b) (tw-b2, b);
-              quad (x, y+b)     (b, h-b2) (0, b) (b, th-b2);
-              quad (x + w-b, y+b) (b, h-b2) (tw-b, b) (0, th-b2);
-            
+    glColor3 ~r:1. ~g:1. ~b:1.;
+    glTexCoord2 ~s:(tcx xt) ~t:(tcy yt);
+    glVertex3 ~x ~y ~z:0.;
+    glTexCoord2 ~s:(tcx BatInt.(xt + wt)) ~t:(tcy yt);
+    glVertex3 ~x:(x + w) ~y ~z:0.;
+    glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy BatInt.(yt+ht));
+    glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+    glTexCoord2 ~s:(tcx xt) ~t:(tcy BatInt.(yt+ht));
+    glVertex3 ~x:x ~y:(y + h) ~z:0.
+  in
+  let open BatInt in
+      let texid = Resource.get (match state with 
+        | Normal  -> "button-normal"
+        | Dragged -> "button-push" 
+        | _       -> "button-normal")
+      in
+
+      glEnable GL_TEXTURE_2D;
+      glEnable GL_BLEND;
+      glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
+
+      glBindTexture 
+        ~target:BindTex.GL_TEXTURE_2D 
+        ~texture:texid;
+      glTexParameter 
+        ~target:TexParam.GL_TEXTURE_2D 
+        ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_LINEAR);
+      glTexParameter 
+        ~target:TexParam.GL_TEXTURE_2D 
+        ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_LINEAR);
+
+      let draw_tex (x,y) (w,h) (tw,th)  b = 
+        let b2 = b * 2 in
+        quad (x+b, y)     (w-b2, b) (b, 0) (tw-b2, b);
+        quad (x+b, y+h-b) (w-b2, b) (b, th-b) (tw-b2, b);
+        quad (x, y+b)     (b, h-b2) (0, b) (b, th-b2);
+        quad (x + w-b, y+b) (b, h-b2) (tw-b, b) (0, th-b2);
+        
               (* Corners *)
-              quad (x, y) (b, b) (0, 0) (b, b);
-              quad (x+w-b, y) (b, b) (tw-b, 0) (b, b);
-              quad (x+w-b, y+h-b) (b, b) (tw-b, th-b) (b, b);
-              quad (x, y+h-b) (b, b) (0, th-b) (b, b);
+        quad (x, y) (b, b) (0, 0) (b, b);
+        quad (x+w-b, y) (b, b) (tw-b, 0) (b, b);
+        quad (x+w-b, y+h-b) (b, b) (tw-b, th-b) (b, b);
+        quad (x, y+h-b) (b, b) (0, th-b) (b, b);
 
               (* Centre *)
-              quad (x+b, y+b) (w-b2, h-b2) (b,b) (tw-b2, th-b2)
-            in
-              glBegin GL_QUADS;
-            (* quad (x+2, y)     (w-4, 2) (2, 0) (tw-4, 2); *)
-            (* quad (x+2, y+h-2) (w-4, 2) (2, th-2) (tw-4, 2); *)
-            (* quad (x, y+2)     (2, h-4) (0, 2) (2, th-4); *)
-            (* quad (x + w-2, y+2) (2, h-4) (tw-2, 2) (0, th-4); *)
-            
-            (* (\* Corners *\) *)
-            (* quad (x, y) (2, 2) (0, 0) (2, 2); *)
-            (* quad (x+w-2, y) (2, 2) (tw-2, 0) (2, 2); *)
-            (* quad (x+w-2, y+h-2) (2, 2) (tw-2, th-2) (2, 2); *)
-            (* quad (x, y+h-2) (2, 2) (0, th-2) (2, 2); *)
-            
-            (* (\* Centre *\) *)
-            (* quad (x+2, y+2) (w-4, h-4) (2,2) (tw-4, th-4); *)
-
-            (* quad (x+3, y)     (w-6, 3) (3, 0) (tw-6, 3); *)
-            (* quad (x+3, y+h-3) (w-6, 3) (3, th-3) (tw-6, 3); *)
-            (* quad (x, y+3)     (3, h-6) (0, 3) (3, th-6); *)
-            (* quad (x + w-3, y+3) (3, h-6) (tw-3, 3) (0, th-6); *)
-            
-            (* (\* Corners *\) *)
-            (* quad (x, y) (3, 3) (0, 0) (3, 3); *)
-            (* quad (x+w-3, y) (3, 3) (tw-3, 0) (3, 3); *)
-            (* quad (x+w-3, y+h-3) (3, 3) (tw-3, th-3) (3, 3); *)
-            (* quad (x, y+h-3) (3, 3) (0, th-3) (3, 3); *)
-            
-            (* (\* Centre *\) *)
-            (* quad (x+3, y+3) (w-6, h-6) (3,3) (tw-6, th-6); *)
-            draw_tex (x,y) (w,h) (tw, th) 4;
-        glEnd ()
-        (* glDisable GL_TEXTURE_2D *)
-
-      (* glBegin GL_LINES; *)
-      (* c 132 132 132; *)
-      (* glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.; *)
-      (* glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.; *)
-
-      (* glVertex3 ~x:(x+1.) ~y:(y + h - 2.) ~z:0.; *)
-      (* glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.; *)
-
-      (* c 66 66 66; *)
-      (* glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
-      (* glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-
-      (* glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
-      (* glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-
-      (* c 255 255 255; *)
-      (* glVertex3 ~x:x ~y:y ~z:0.; *)
-      (* glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
-
-      (* glVertex3 ~x:x ~y:y ~z:0.; *)
-      (* glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
-
-      (* glEnd () *)
-
-    (* | Pressed -> *)
-    (*   glBegin GL_LINES; *)
-      
-    (*   c 255 255 255; *)
-    (*   glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
-    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-      
-    (*   glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
-    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-      
-    (*   c 132 132 132; *)
-    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
-    (*   glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
-      
-    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
-    (*   glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
-    (*   glEnd () *)
-    (* | Dragged -> *)
-    (*   glBegin GL_LINES; *)
-      
-    (*   c 255 0 0; *)
-    (*   glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
-    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-      
-    (*   glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
-    (*   glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-      
-    (*   c 255 132 132; *)
-    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
-    (*   glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
-      
-    (*   glVertex3 ~x:x ~y:y ~z:0.; *)
-    (*   glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
-    (*   glEnd () *)
+        quad (x+b, y+b) (w-b2, h-b2) (b,b) (tw-b2, th-b2)
+      in
+      glBegin GL_QUADS;
+      draw_tex (x,y) (w,h) (tw, th) 4;
+      glEnd ()
 
 let bg_painter state rect =
-  (* Should use skinning instead *)
-  (* match state with *)
-  (*   | Normal -> *)
-  
-  let tw,th = 128, 128 in
-  let tcx i = (float i) /. float tw in
-  let tcy i = (float i) /. float th in
+  let x, y, w, h = Rect.coords rect in
+  let quad (x, y) (w, h)  =
+    let open BatFloat in
+    let x,y,w,h = 
+      float x,
+      float y,
+      float w,
+      float h
+    in
+    glVertex3 ~x ~y ~z:0.;
+    glVertex3 ~x:(x + w) ~y ~z:0.;
+    glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+    glVertex3 ~x:x ~y:(y + h) ~z:0.
+    in
 
-        let x, y, w, h = Window.center_rect rect in
-        let x, y, w, h = int_of_float x, int_of_float y, int_of_float w, int_of_float h in
-
-        let quad (x, y) (w, h) (xt,yt) (wt, ht)  =
-          let x,y,w,h = 
-            float_of_int x,
-            float_of_int y,
-            float_of_int w,
-            float_of_int h
-          in
-          glColor3 ~r:1. ~g:1. ~b:1.;
-          glTexCoord2 ~s:(tcx xt) ~t:(tcy yt);
-          glVertex3 ~x ~y ~z:0.;
-          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy yt);
-          glVertex3 ~x:(x + w) ~y ~z:0.;
-          glTexCoord2 ~s:(tcx BatInt.(xt+wt)) ~t:(tcy BatInt.(yt+ht));
-          glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
-          glTexCoord2 ~s:(tcx xt) ~t:(tcy BatInt.(yt+ht));
-          glVertex3 ~x:x ~y:(y + h) ~z:0.
-        in
-        let open BatInt in
-            let texid = Resource.get "button-normal" in
-            glEnable GL_TEXTURE_2D;
-            glEnable GL_BLEND;
-            glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
-            glBindTexture ~target:BindTex.GL_TEXTURE_2D ~texture:texid;
-            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);
-            glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_NEAREST);
-            glBegin GL_QUADS;
-            quad (x+2, y)     (w-4, 2) (2, 0) (tw-4, 2);
-            quad (x+2, y+h-2) (w-4, 2) (2, th-2) (tw-4, 2);
-            quad (x, y+2)     (2, h-4) (0, 2) (2, th-4);
-            quad (x + w-2, y+2) (2, h-4) (tw-2, 2) (0, th-4);
-            
-            (* Corners *)
-            quad (x, y) (2, 2) (0, 0) (2, 2);
-            quad (x+w-2, y) (2, 2) (tw-2, 0) (2, 2);
-            quad (x+w-2, y+h-2) (2, 2) (tw-2, th-2) (2, 2);
-            quad (x, y+h-2) (2, 2) (0, th-2) (2, 2);
-            
-            (* Centre *)
-            quad (x+2, y+2) (w-4, h-4) (2,2) (tw-4, th-4);
-        glEnd ()
-
-let bg_painter state rect =
-  (* Should use skinning instead *)
-  (* match state with *)
-  (*   | Normal -> *)
-  
-
-        let x, y, w, h = Window.center_rect rect in
-        let x, y, w, h = int_of_float x, int_of_float y, int_of_float w, int_of_float h in
-
-        let quad (x, y) (w, h)  =
-          let x,y,w,h = 
-            float_of_int x,
-            float_of_int y,
-            float_of_int w,
-            float_of_int h
-          in
-          glVertex3 ~x ~y ~z:0.;
-          glVertex3 ~x:(x + w) ~y ~z:0.;
-          glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
-          glVertex3 ~x:x ~y:(y + h) ~z:0.
-        in
-        let open BatInt in
-            glDisable GL_TEXTURE_2D;
-            glDisable GL_BLEND;
-            glBegin GL_QUADS;
-            glColor3 ~r:(120./.256.) ~g:(100./.256.) ~b:(100./.256.);
-            quad (x, y) (w,h);
-
-        glEnd ()
-
-open BatFloat
-(* let quad_painter rect = *)
-(*    let x, y, w, h = Window.center_rect rect in *)
-(*    glBegin GL_QUADS; *)
-(*    glVertex3 ~x ~y (); *)
-(*    glVertex3 ~x:(x + w) ~y (); *)
-(*    glVertex3 ~x:(x + w) ~y:(y + h) (); *)
-(*    glVertex3 ~x ~y:(y + h) (); *)
-(*    glEnd (); *)
-(*    () *)
+  glDisable GL_TEXTURE_2D;
+  glDisable GL_BLEND;
+  glBegin GL_QUADS;
+  glColor3 ~r:(120./.256.) ~g:(100./.256.) ~b:(100./.256.);
+  quad (x, y) (w, h);
+  glEnd ()
 
 open BatInt
 
@@ -261,7 +107,6 @@ class graphical = object ( self : 'self )
   initializer window.Window.painter <- (fun rect -> self#paint state rect)
   method invalidate rect = window.Window.pos <- rect
   method revalidate = self # invalidate window.Window.pos
-
   method paint = bg_painter
 end
 
@@ -371,14 +216,10 @@ end
 
 class fixed = object ( self : 'self )
   inherit draggable
-
-
   method follow_drag dpos = () 
   method drag point pos dpos = ()
   method drag_end = false
-
   method paint = bg_painter
-
 end
 
 class desktop =  object ( self : 'self )
@@ -500,37 +341,21 @@ open BatFloat
 open BatFloat
 
 let caption_painter text _ state rect =
-   let x, y, w, h = Window.center_rect rect in
+   let x, y, w, h = Rect.coords rect in
    button_painter state rect;
    let len = float (text_width text) in
-   let ofs_x = (w - len) / 2. + x in
-   let ofs_y = (h - 10.) / 2. + y in
+   let ofs_x = (float w - len) / 2. + float x in
+   let ofs_y = (float h - 10.) / 2. + float y in
    glColor3 ~r:(200./.256.) ~g:(180./.256.) ~b:(180./.256.);
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
 
 let caption_painter2 text _ state rect =
   button_painter state rect;
-   let x, y, w, h = Window.center_rect rect in
+   let x, y, w, h = Rect.coords rect in
    let len = float (text_width text) in
-   let ofs_x = (w - len) / 2. + x in
-   let ofs_y = (h - 10.) / 2. + y in
-   (* glBegin GL_LINES; *)
-   
-  (*  c 255 0 0; *)
-  (*  glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *)
-  (*  glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-   
-  (*  glVertex3 ~x:x ~y:(y + h-1.) ~z:0.; *)
-  (*  glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *)
-   
-  (*  c 255 132 132; *)
-  (*  glVertex3 ~x:x ~y:y ~z:0.; *)
-  (*  glVertex3 ~x:(x + w-2.) ~y:y ~z:0.; *)
-   
-  (*  glVertex3 ~x:x ~y:y ~z:0.; *)
-  (*  glVertex3 ~x:x ~y:(y+h-2.) ~z:0.; *)
-  (* glEnd (); *)
+   let ofs_x = (float w - len) / 2. + float x in
+   let ofs_y = (float h - 10.) / 2. + float y in
    glColor3 ~r:(200./.256.) ~g:(180./.256.) ~b:(180./.256.);
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
@@ -621,35 +446,51 @@ class int_slider name left right step = object ( self : 'self )
   (* method value = value *)
 end
 
+module Defaults = struct
+  let widget_height = 25
+  let widget_width = 25
+  let spacing = 5
+end
 module Layout = struct
-type layout = Rect.t -> Rect.t -> int -> int -> Rect.t
-let horizontal spacing parent_rect _ c i =
-  let (w,h) = Rect.size parent_rect in
-  let s = w / c in
+  type t = Rect.t -> Rect.t -> int -> int -> Rect.t
+
+  let horizontal_fill 
+      ?spacing:(spacing=Defaults.widget_height) 
+      parent_rect _ c i =
+    let (w,h) = Rect.size parent_rect in
+    let s = w / c in
     Rect.rect ((i * s)+spacing, 0) (s-2*spacing,h)
 
-let vertical spacing parent_rect _ c i =
-  let (w,h) = Rect.size parent_rect in
-  let s = h / c in
+  let vertical_fill 
+      ?spacing:(spacing=Defaults.spacing) 
+      parent_rect _ c i =
+    let (w,h) = Rect.size parent_rect in
+    let s = h / c in
     Rect.rect (0, (i * s)+spacing) (w, s-2*spacing)
 
-let fixed_vertical spacing height parent_rect d c i =
-  let (w,h) = Rect.size parent_rect in
-  if (height + 2 * spacing) * c > h then
-    vertical spacing parent_rect d c i
-  else
-    let ofs = (i * (height + 2 * spacing)) + spacing in
-    Rect.rect (spacing, ofs) (w-spacing*2,height)
+  let vertical 
+      ?spacing:(spacing=Defaults.spacing) 
+      ?size:(height=Defaults.widget_height) 
+      parent_rect d c i =
+    let (w,h) = Rect.size parent_rect in
+    if (height + 2 * spacing) * c > h then
+      vertical_fill ~spacing parent_rect d c i
+    else
+      let ofs = i * (height + 2 * spacing) + spacing in
+      Rect.rect (spacing, ofs) (w - spacing * 2, height)
 
-let fixed_horizontal spacing width parent_rect d c i =
-  let (w,h) = Rect.size parent_rect in
-  if (width + 2 * spacing) * c > w then
-    horizontal spacing parent_rect d c i
-  else
-    let ofs = (i * (width + 2 * spacing)) + spacing in
-    Rect.rect (ofs, spacing) (width, h-spacing*2)
+  let horizontal 
+      ?spacing:(spacing=Defaults.widget_height) 
+      ?size:(width=Defaults.widget_width) 
+      parent_rect d c i =
+    let (w,h) = Rect.size parent_rect in
+    if (width + 2 * spacing) * c > w then
+      horizontal_fill ~spacing parent_rect d c i
+    else
+      let ofs = i * (width + 2 * spacing) + spacing in
+      Rect.rect (ofs, spacing) (width, h - spacing * 2)
 
-let fill parent_rect _ _ _ = Rect.rect (0,0) (Rect.size parent_rect)
+  let fill parent_rect _ _ _ = Rect.rect (0,0) (Rect.size parent_rect)
 end
 
 class frame layout = object ( self : 'self )
@@ -663,26 +504,14 @@ class frame layout = object ( self : 'self )
       w # invalidate local_rect) widgets
 end
 
-open BatFloat
 class graphics = object ( self : 'self )
   inherit fixed
-  initializer
-    window.Window.painter <- self#draw
-    method draw rect =
-      let x, y, w, h = Window.center_rect rect in
-      (* glBegin GL_QUADS; *)
-      (* glColor3 ~r:0. ~g:0. ~b:0.; *)
-      (* glVertex3 ~x ~y ~z:0.; *)
-      (* glVertex3 ~x:(x + w) ~y ~z:0.; *)
-      (* glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.; *)
-      (* glVertex3 ~x ~y:(y + h) ~z:0.; *)
-      (* glEnd (); *)
-      ()
+  initializer window.Window.painter <- self#draw
+  method draw _ = ()
 end
 
-open BatInt
 class menu pos items = object ( self : 'self)
-  inherit frame (Layout.fixed_vertical 5 20)
+  inherit frame Layout.vertical
   val mutable widget_items : (draggable * string) list = []
   initializer
   let max_width = ref 0 in

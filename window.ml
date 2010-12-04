@@ -10,9 +10,6 @@ type window = {
 open Rect
 open BatFloat
 
-let center_coord c = float c + 0.5
-
-let center_rect = lift22 center_coord float
 
 let default_painter _ = ()
 
