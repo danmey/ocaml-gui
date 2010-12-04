@@ -531,7 +531,7 @@ class graphics = object ( self : 'self )
   method draw _ = ()
 end
 
-class menu pos items = object ( self : 'self)
+class menu pos items select = object ( self : 'self)
   inherit frame Layout.vertical
   val mutable widget_items : (draggable * string) list = []
   initializer
@@ -547,9 +547,10 @@ class menu pos items = object ( self : 'self)
     
   method clicked widget button pos =
     BatOption.may (fun parent -> parent # remove (self :> draggable)) parent;
-    Event.run_events self # window 
-      (Event.Custom ("menu_item", 
-                     pos, 
-                     (List.assq widget widget_items)))
+    select pos (List.assq widget widget_items);
+    ()
     
 end
+
+let menu ~items ~pos ~select =
+  new menu pos items select

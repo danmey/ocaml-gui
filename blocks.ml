@@ -64,7 +64,7 @@ let properties
   new properties definition change
     
 (* end and block name = object ( self : 'self ) *)
-class block name (properties : properties) = object ( self : 'self ) 
+class block name (properties : properties) click = object ( self : 'self ) 
   inherit canvas as canvas
   inherit draggable as super
   val left_border = new draggable_constrained (HorizontalWith 10)
@@ -103,37 +103,11 @@ class block name (properties : properties) = object ( self : 'self )
            (grid (rect.Rect.w + dx), rect.Rect.h))
 
   method mouse_down b p =
-    Event.run_events self # window
-      (Event.Custom ("block_clicked",
-                     p,
-                     ""));
+    click self;
     super # mouse_down b p
       
   method key = name
   method focus is = focus <- is
-
-  (* method paint state rect = *)
-  (*   let open BatFloat in *)
-  (*   let x, y, w, h = Window.center_rect rect in *)
-  (*   button_painter state rect; *)
-  (*   let len = float (text_width self # name) in *)
-  (*   let ofs_x = (w - len) / 2. + x in *)
-  (*   let ofs_y = (h - 10.) / 2. + y in *)
-  (*   draw_text (int_of_float ofs_x) (int_of_float ofs_y) self # name; *)
-  (*   if focus then *)
-  (*     ( *)
-  (*      (\*  glBegin GL_LINES; *\) *)
-  (*      (\* c 255 132 132; *\) *)
-  (*      (\* glVertex3 ~x:(x + 1.) ~y:(y + 1.) ~z:0.; *\) *)
-  (*      (\* glVertex3 ~x:(x + w-2.) ~y:(y + 1.) ~z:0.; *\) *)
-  (*      (\* glVertex3 ~x:(x + w-2.) ~y:(y + h-2.) ~z:0.; *\) *)
-  (*      (\* glVertex3 ~x:(x +1.) ~y:(y + h-2.) ~z:0.; *\) *)
-       
-  (*      (\* glVertex3 ~x:(x + 0.) ~y:(y + 0.) ~z:0.; *\) *)
-  (*      (\* glVertex3 ~x:(x + w-1.) ~y:(y + 0.) ~z:0.; *\) *)
-  (*      (\* glVertex3 ~x:(x + w-1.) ~y:(y + h-1.) ~z:0.; *\) *)
-  (*      (\* glVertex3 ~x:(x +0.) ~y:(y + h-1.) ~z:0.; *\) *)
-  (*      (\* glEnd *\) ()) *)
 
   method paint state = caption_painter2 self # name 0 state
 
@@ -141,6 +115,8 @@ class block name (properties : properties) = object ( self : 'self )
         
 end
 
+let block ~properties ?click:(click = fun _ -> ()) name = 
+  new block name properties click
 open BatFloat
 class texture_preview = object ( self : 'self )
   inherit graphics as super
@@ -204,8 +180,8 @@ class block_canvas = object ( self : 'self)
     match button with
       | Event.Right ->
         last_mouse_pos <- pos;
-        let names, _ = List.split properties_definition in
-        let m = new menu pos names in
+        let items, _ = List.split properties_definition in
+        let m = menu ~pos ~items ~select:(fun pos item -> self # select_menu pos item) in
         self # add (m :> draggable);
         true
       | Event.Middle ->
@@ -232,45 +208,27 @@ class block_canvas = object ( self : 'self)
     in
     loop lst
       
-    
-  (* let stack = stack_loop [[]] ((List.hd sorted).Rect.y) sorted in *)
-    
-    (* let rec loop = function *)
-    (*   | x :: xs -> String.concat "\t" (List.map (fun rect -> (List.assoc rect widget_rects)#name) x) :: (loop xs) *)
-    (*   | [] -> [] *)
-    (* in *)
-    (* () *)
-    (* let rec tree_loop parent_name = function *)
-    (*   | x :: xs -> Children parent_name (List.map (fun rect -> (List.assoc rect widget_rects) # name) x) :: (tree_loop xs) *)
-    (*   | [] -> [] *)
-    (* in *)
-
   method focus_block block =
     BatOption.may (fun block -> block # focus false) focused_block;
     block # focus true;
     focused_block <- Some block
 
-    method event wind = 
-      function
-      | Event.Custom ("menu_item", _, what) -> 
-        let definition = List.assq what properties_definition in
-        let properties_pane = properties definition in
+  method select_menu _ item =
+        let definition = List.assq item properties_definition in
+        let properties = properties definition in
         property_pane # remove_all;
-        property_pane # add (properties_pane :> draggable);
-        property_pane # revalidate;
-        let b = new block what properties_pane in
+        property_pane # add (properties :> draggable);
+        propertyq_pane # revalidate;
+        let b = block ~properties ~click:(fun block -> self # click_block block) item in
         self#add (b :> draggable);
         b#invalidate (Rect.rect last_mouse_pos (80, 20));
         self # focus_block b;
         true
-      | Event.Custom ("block_clicked", _, _) ->
-        let widget = self # find wind in
-        let block : block = Obj.magic widget in
-        let properties_pane = block # get_properties in
-        property_pane # remove_all;
-        property_pane # add (properties_pane :> draggable);
-        property_pane # revalidate;
-        self # focus_block block;
-        true
-      | ev -> super # event wind ev
+          
+  method click_block block =
+    let properties_pane = block # get_properties in
+    property_pane # remove_all;
+    property_pane # add (properties_pane :> draggable);
+    property_pane # revalidate;
+    self # focus_block block
 end
