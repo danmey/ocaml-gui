@@ -55,25 +55,6 @@ open BatFloat
 (*       () *)
 (* end *)
 
-open BatInt
-class generate_button = object (self : 'self)
-  inherit button as super
-  method mouse_down a b = 
-    super # mouse_down a b;
-    BatOption.may (fun parent ->
-      (* print_endline "ala ma kota"; *)
-      (* Event.run_events self # window  *)
-      (*   (Event.Custom ("menu_item",  *)
-      (*                  (0,0),  *)
-      (*                "ala")); *)
-      print_endline (parent#first#name);
-      Event.run_events
-        self # window
-        (Event.Parameters ["octaves",  parent#first#value])
-    ) parent;
-    true
-
-end
 
 open Blocks
 
@@ -171,6 +152,7 @@ let texture_generator_view () =
 (*       ()) *)
 
 let b () =
+  let open BatInt inq
   let g = new desktop in
   let tgv = ((texture_generator_view()) :> graphical) in
   Gui.init

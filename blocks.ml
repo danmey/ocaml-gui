@@ -218,7 +218,7 @@ class block_canvas = object ( self : 'self)
         let properties = properties definition in
         property_pane # remove_all;
         property_pane # add (properties :> draggable);
-        propertyq_pane # revalidate;
+        property_pane # revalidate;
         let b = block ~properties ~click:(fun block -> self # click_block block) item in
         self#add (b :> draggable);
         b#invalidate (Rect.rect last_mouse_pos (80, 20));
