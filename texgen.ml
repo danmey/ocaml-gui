@@ -414,34 +414,72 @@ let tree =
 
 module A = Bigarray.Genarray;;
 
-let texture op =
+let ar = A.create Bigarray.int8_unsigned Bigarray.c_layout [|256;256;4|]
+let ar_src = Array.create (256*256) 0.
+let current_line = ref 0
+let operator = ref None
+let update_texture () =
+  BatOption.may (fun op ->
   let max = ref (-1000000.) in
   let min = ref ( 1000000.) in
-  let ar = A.create Bigarray.int8_unsigned Bigarray.c_layout [|256;256;4|] in
-  let ar_src = Array.create (256*256) 0. in
-  for y = 0 to 256 - 1 do
+  let y =  !current_line in
     for x = 0 to 256 - 1 do
       let v = value op ((float y /. 256.0), (float x /. 256.0)) in
       if v > !max then max := v;
       if v < !min then min := v;
-      ar_src.(256 * y + x) <- v;
-    done
-  done;
-  max := 1.0;
-  min := 0.0;
-  for y = 0 to 256 - 1 do
-    for x = 0 to 256 - 1 do
-      let v = ar_src.(256 * y + x) in
-      let v' = (v -. !min) /. (!max -. !min) in
-      let v' = int_of_float (v' *. 255.0) in
+      let v' = int_of_float (v *. 255.0) in 
       A.set ar [|y;x;0|] v';
       A.set ar [|y;x;1|] v';
       A.set ar [|y;x;2|] v';
       A.set ar [|y;x;3|] 255;
-    done
-  done;
-  ar
-;;
+    
+      (* ar_src.(256 * y + x) <- v; *)
+    done;
+  current_line := !current_line + 1;
+  (if !current_line > 255 then
+    current_line := 0);
+
+  (* let k' = *)
+  (*   let rec loop_y y = *)
+  (*      if y < 256 then *)
+  (*        begin *)
+  (*        let rec loop_x x = *)
+  (*          if x < 256 then *)
+  (*            begin *)
+  (*              let v = value op ((float y /. 256.0), (float x /. 256.0)) in *)
+  (*              if v > !max then max := v; *)
+  (*              if v < !min then min := v; *)
+  (*                 ar_src.(256 * y + x) <- v; *)
+  (*                 Printf.printf "tex:%d %d\n" x y; *)
+  (*                 flush stdout; *)
+  (*                 loop_x (x+1) *)
+  (*            end *)
+  (*          else () *)
+  (*        in *)
+  (*        loop_x 0; *)
+  (*        (fun () -> ignore(loop_y (y+1))) *)
+  (*        end *)
+  (*      else fun () -> () *)
+  (*   in *)
+  (*   match k with *)
+  (*     | Some k -> k () *)
+  (*     | None -> loop_y 0 *)
+  (* in *)
+  (* max := 1.0; *)
+  (* min := 0.0; *)
+  (* for y = 0 to 256 - 1 do *)
+  (*   for x = 0 to 256 - 1 do *)
+  (*     let v = ar_src.(256 * y + x) in *)
+  (*     let v' = (v -. !min) /. (!max -. !min) in *)
+  (*     let v' = int_of_float (v' *. 255.0) in *)
+  (*     A.set ar [|y;x;0|] v'; *)
+  (*     A.set ar [|y;x;1|] v'; *)
+  (*     A.set ar [|y;x;2|] v'; *)
+  (*     A.set ar [|y;x;3|] 255; *)
+  (*   done *)
+                 (* done *)
+  ) !operator
+
 
 
 

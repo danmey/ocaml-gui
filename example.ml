@@ -59,6 +59,7 @@ open BatFloat
 open Blocks
 
 let texture_generator_view () =
+  let kont = ref None in
   let open Texgen in
     let control_pane = new texture_preview(* frame (Layout.fixed_vertical 5 25) *) in
     let generate graphical_pane =
@@ -101,7 +102,8 @@ let texture_generator_view () =
                        ldy = propf "ldy"; }, (loop xs)))
       in
       let op2 = loop stack in
-      let ti = Texture.Tga.gl_maketex (Texgen.texture op2) in
+      Texgen.operator := Some op2;
+      let ti = Texture.Tga.gl_maketex Texgen.ar in
       control_pane # set_image ti;
     in
     let graphical_pane = block_canvas ~generate () in

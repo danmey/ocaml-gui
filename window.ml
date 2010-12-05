@@ -50,6 +50,7 @@ let rec draw_window window =
   draw_client_window (desktop_rect ()) window
 
 let draw_desktop () = 
+  Texgen.update_texture();
   draw_window desktop
 
 let window_path window =
