@@ -213,9 +213,7 @@ let light op { lx; ly; ldx; ldy } =
       op (x+ldx, y) -. op ((x-ldx), y), 
       op (x ,y+ldy) -. op (x, (y-ldy))
     in
-    let ll = 1.0 /. sqrt (v1 *. v1 +. v2 *. v2) in
-    let v1', v2' = v1 *. ll, v2 *. ll in
-    let dot = v1' *. lx +. v2' *. ly in
+    let dot = v1 *. lx +. v2 *. ly in
     if dot > 0. then op (x, y) *. dot else 0.
 
   (* let normalize w layer = *)
@@ -429,6 +427,8 @@ let texture op =
       ar_src.(256 * y + x) <- v;
     done
   done;
+  max := 1.0;
+  min := 0.0;
   for y = 0 to 256 - 1 do
     for x = 0 to 256 - 1 do
       let v = ar_src.(256 * y + x) in

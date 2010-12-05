@@ -382,7 +382,7 @@ end
 
 open BatInt
 
-class slider name left right step (change : slider -> unit)
+class slider name left right step default (change : slider -> unit)
   = object ( self : 'self )
   inherit draggable_constrained Horizontal as super
   val mutable value = 0.
@@ -391,6 +391,8 @@ class slider name left right step (change : slider -> unit)
   val left = left
   val right = right
   val name = name
+  initializer 
+    value <- default
 
   method clamp v = 
     let open BatFloat in
@@ -428,14 +430,16 @@ let round v =
     snd (modf v)
 
 open BatInt
-class int_slider name left right step change
+class int_slider name left right step default change
   = object ( self : 'self )
   inherit slider 
     name
     (float_of_int left)
     (float_of_int right)
     step
+    (float_of_int default)
     change
+
 
   method value = Event.Int (int_of_float (round value))
   method drag_end =
@@ -455,17 +459,19 @@ let float_slider
     ?min:(min=0.) 
     ?max:(max=1.)
     ?step:(step=0.01)
+    ?value:(value=0.)
     ?change:(change=fun (w:slider) -> ())
     name
-    = (new slider name min max step change :> draggable)
+    = (new slider name min max step value change :> draggable)
 
 let int_slider 
     ?min:(min=0) 
     ?max:(max=100)
     ?step:(step=1.)
+    ?value:(value=0)
     ?change:(change=fun (w:slider) -> ()) 
     name
-    = (new int_slider name min max step change  :> draggable)
+    = (new int_slider name min max step value change  :> draggable)
   
 module Defaults = struct
   let widget_height = 25

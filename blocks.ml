@@ -34,9 +34,9 @@ class properties props change = object (self : 'self)
     List.iter
       (function
       | (name, Float { min; max; default; step }) -> 
-        self # add (float_slider ~min ~max ~step ~change name)
+        self # add (float_slider ~value:default ~min ~max ~step ~change name)
       | (name, Int { min; max; default; step }) -> 
-        self # add (int_slider ~min ~max ~step ~change name))
+        self # add (int_slider ~value:default ~min ~max ~step ~change name))
       props
 
   method delete_properties =
@@ -154,6 +154,17 @@ let properties_definition =
      "ldx", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };
      "ldy", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };
    ];
+   "glow", [
+     "x0", Float { min = -1.; max = 1.; default = 0.5; step = 0.01 };
+     "y0", Float { min = -1.; max = 1.; default = 0.5; step = 0.01 };
+     "atten", Float { min = -100.; max = 100.; default = 1.; step = 0.1 };
+     "xr", Float { min = 0.; max = 5.; default = 0.5; step = 0.01 };
+     "yr", Float { min = 0.; max = 5.; default = 0.5; step = 0.01 };
+   ];
+  "phi",[
+    "scale", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+     "base", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };];
+    "add", [];
   ]
     
 
@@ -175,7 +186,7 @@ class block_canvas generate = object ( self : 'self)
         self # layout; true
       | _ -> super # mouse_down button pos
 
-  method layout =
+  method layout : ((draggable * properties) list list) =
     let open BatInt in
     let rects = List.map (fun (_,w) -> w # window.pos) widgets in
     let block_rects = List.map (fun (_,w) -> w # window.pos,w) widgets in
@@ -192,8 +203,11 @@ class block_canvas generate = object ( self : 'self)
       | [] -> acc in
     let lst = stack_loop [[]] (List.hd sorted).Rect.y sorted in
     let rec loop = function
-      | (a::_)::xs -> 
-        let props  = List.assoc a block_rects, List.assoc a widget_properties in
+      | lst::xs -> 
+        let props  = List.map 
+          (fun a -> 
+            List.assoc a block_rects, 
+            List.assoc a widget_properties) lst in
           props :: loop xs
       (* | a :: [] -> print_endline ("top: " ^ (snd (List.assq a widget_rects))#key) *)
       | [] -> []
