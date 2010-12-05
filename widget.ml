@@ -409,7 +409,7 @@ class slider name left right step (change : slider -> unit)
     value <- self # clamp v;
     drag_value <- 0.;
     self # slide_end value;
-    Event.run_events self # window (Event.Custom ("slide_end", (0,0), ""));
+    change (self :> slider);
     true
       
   method slide_end value = change (self:>slider)
@@ -442,7 +442,7 @@ class int_slider name left right step change
     value <- round (value +. drag_value);
     drag_value <- 0.;
     self # slide_end value;
-    Event.run_events self # window (Event.Custom ("slide_end", (0,0), ""));
+    change (self :> slider);
     true
 
   method caption value = 
@@ -554,3 +554,8 @@ end
 
 let menu ~items ~pos ~select =
   new menu pos items select
+
+(* class content_pane = object (self : 'self) *)
+
+(* let ref_pane content:= *)
+(*   new frame Layout.fill *)

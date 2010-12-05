@@ -59,52 +59,51 @@ open BatFloat
 open Blocks
 
 let texture_generator_view () =
+  let open Texgen in
     let control_pane = new texture_preview(* frame (Layout.fixed_vertical 5 25) *) in
-    let graphical_pane = new block_canvas in
-    let change _ =
+    let generate graphical_pane =
       let op_of_properties edit_pane =
         let ws = edit_pane # widgets in
         let params = 
-          List.map (fun (_,w) -> 
-            print_endline w#key; w # key, w # value) ws 
+          List.map (fun (_,w) ->
+            w # key, w # value) ws 
         in
         params
       in
-      let open Texgen in
-          let stack = graphical_pane#layout in
-          let loop = function
-            | a :: xs -> 
-              let params = op_of_properties a in
-              List.iter (fun (x,_) -> Printf.printf "params: %s\n" x; flush stdout) params;
-              let propf name = let Event.Float v = print_endline name; flush stdout;List.assoc name params in v in
-              let propi name = let Event.Int v = print_endline name; flush stdout;List.assoc name params in v in
-              let rec matchop = function
-                | "perlin" -> 
-                  Clouds { octaves = propi "octaves"; 
-                           persistence = propf "persistence"}
-                | "light" ->
-                  (match xs with
-                    | x :: lst ->
-                      Light ({ lx = propf "lx"; 
-                               ly = propf "ly";
-                               ldx = propf "ldx";
-                               ldy = propf "ldy"; }, (matchop (x#key))))
-              in
-              matchop a # key
-            in
-            (* let op = loop stack in *)
-            ()
+      let stack = graphical_pane#layout in
+      (* let stack = [] in *)
+      let rec loop = function
+        | (block, prop) :: xs -> 
+          Printf.printf "==%s:\n" block # key; 
+          let params = op_of_properties prop in
+          List.iter (fun (k, _) -> print_endline k) params;
+              let propf name = let Event.Float v =List.assoc name params in v in
+              let propi name = let Event.Int v = List.assoc name params in v in
+
+            match block # key with
+            | "perlin" ->
+              print_endline "**perlin";
+              let l = Clouds { octaves = propi "octaves"; 
+                       persistence = propf "persistence"} in
+              print_endline "***perlin";
+                l
+            | "light" ->
+              print_endline "**light";
+              Light ({ lx = propf "lx"; 
+                       ly = propf "ly";
+                       ldx = propf "ldx";
+                       ldy = propf "ldy"; }, (loop xs))
       in
-          (* let ti = Texture.Tga.gl_maketex (texture op) in *)
-            (* control_pane # set_image ti; *)
-        (* let op = loop stack in *)
-          (* let ti = Texture.Tga.gl_maketex (texture op) in *)
-          (* control_pane # set_image ti; *)
-      let (_, edit_properties) :: _ = properties_definition in
-      let edit_pane = properties edit_properties ~change in
-      let split_control = splitter ~first:(control_pane :> draggable) ~second:(property_pane :> draggable) Vertical in
-      property_pane # add (edit_pane  :> fixed);
-      splitter ~first:split_control ~second:graphical_pane Horizontal
+      let op2 = loop stack in
+      let ti = Texture.Tga.gl_maketex (Texgen.texture op2) in
+      control_pane # set_image ti;
+    in
+    let graphical_pane = block_canvas ~generate () in
+    let (_, edit_properties) :: _ = properties_definition in
+    let edit_pane = properties edit_properties in
+    let split_control = splitter ~first:control_pane ~second:property_pane Widget.Vertical in
+    property_pane # add (edit_pane  :> fixed);
+    splitter ~first:split_control ~second:graphical_pane Widget.Horizontal
 
 
       
@@ -152,7 +151,7 @@ let texture_generator_view () =
 (*       ()) *)
 
 let b () =
-  let open BatInt inq
+  let open BatInt in
   let g = new desktop in
   let tgv = ((texture_generator_view()) :> graphical) in
   Gui.init
@@ -164,7 +163,6 @@ let b () =
        Window.shelf (Rect.rect (0,0) (width,height));
        tgv#invalidate (Rect.rect (10,10) (width-20,height-20));
        g#invalidate (Rect.rect (0,0) (width,height)))
-
 ;;
 
 b()

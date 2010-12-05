@@ -18,13 +18,6 @@ let block_cmp l r =
   else
     r.Rect.x - l.Rect.x
 
-(* class block_canvas = object ( self : 'self ) *)
-(*   inherit [ block ] composite as composite *)
-(*   inherit graphical as super *)
-(*   method add block =  *)
-(*     composite#add block; *)
-(*     block#set_canvas (self :> block_canvas) *)
-
 type tree = Tree of string * tree list
 
 type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
@@ -34,12 +27,6 @@ type property_type =
 
 type property = string * property_type
 
-(* class property_slider = object (self : 'self) *)
-(*   inherit slider *)
-    
-(*   (\* method slide_end value =  *\) *)
-(*   (\*   Custom ( *\) *)
-(* end     *)
 class properties props change = object (self : 'self)
   inherit frame (Layout.vertical)
     
@@ -64,13 +51,12 @@ let properties
   new properties definition change
     
 (* end and block name = object ( self : 'self ) *)
-class block name (properties : properties) click = object ( self : 'self ) 
+class block name click = object ( self : 'self ) 
   inherit canvas as canvas
   inherit draggable as super
   val left_border = new draggable_constrained (HorizontalWith 10)
   val right_border = new draggable_constrained (HorizontalWith 10)
   val name = name
-  val properties = properties
   val mutable focus = false
   initializer
     canvas#add left_border;
@@ -82,6 +68,7 @@ class block name (properties : properties) click = object ( self : 'self )
     window.pos.Rect.y <- grid y
 
   method name = name
+
   (* method paint state = *)
   (*   let caption = Printf.sprintf "%s: %s" name self#value in *)
   (*   caption_painter caption 0 state *)
@@ -110,13 +97,11 @@ class block name (properties : properties) click = object ( self : 'self )
   method focus is = focus <- is
 
   method paint state = caption_painter2 self # name 0 state
-
-  method get_properties = properties
         
 end
 
-let block ~properties ?click:(click = fun _ -> ()) name = 
-  new block name properties click
+let block ?click:(click = fun _ -> ()) name =
+  new block name click
 open BatFloat
 class texture_preview = object ( self : 'self )
   inherit graphics as super
@@ -165,17 +150,19 @@ let properties_definition =
    ];
    "light", [
      "lx", Float { min = 0.; max = 1.; default = 0.; step = 0.01 };
-    "ly", Float { min = 0.; max = 1.; default = 1.; step = 0.01 };
-    "ldx", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };
-    "ldy", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. }; ]
+     "ly", Float { min = 0.; max = 1.; default = 1.; step = 0.01 };
+     "ldx", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };
+     "ldy", Float { min = 0.; max = 1.; default = 1.; step = 1./.256. };
+   ];
   ]
     
 
-class block_canvas = object ( self : 'self)
+class block_canvas generate = object ( self : 'self)
   inherit canvas as canvas
   inherit fixed as super
   val mutable last_mouse_pos = (0,0)
   val mutable focused_block = None
+  val mutable block_properties = []
   method mouse_down button pos =
     match button with
       | Event.Right ->
@@ -191,7 +178,10 @@ class block_canvas = object ( self : 'self)
   method layout =
     let open BatInt in
     let rects = List.map (fun (_,w) -> w # window.pos) widgets in
-    let widget_rects = List.combine rects widgets in
+    let block_rects = List.map (fun (_,w) -> w # window.pos,w) widgets in
+    let widget_properties = List.combine rects 
+      (List.map (fun (w,_) ->
+        List.assq w block_properties) widgets) in
     let sorted = BatList.sort ~cmp:block_cmp rects in
     let rec stack_loop acc cur_y = function
       | x :: xs when x.Rect.y = cur_y ->
@@ -202,11 +192,13 @@ class block_canvas = object ( self : 'self)
       | [] -> acc in
     let lst = stack_loop [[]] (List.hd sorted).Rect.y sorted in
     let rec loop = function
-      | (a::_)::xs -> (snd (List.assq a widget_rects)) :: loop xs
+      | (a::_)::xs -> 
+        let props  = List.assoc a block_rects, List.assoc a widget_properties in
+          props :: loop xs
       (* | a :: [] -> print_endline ("top: " ^ (snd (List.assq a widget_rects))#key) *)
       | [] -> []
     in
-    loop lst
+    List.rev (loop lst)
       
   method focus_block block =
     BatOption.may (fun block -> block # focus false) focused_block;
@@ -214,21 +206,24 @@ class block_canvas = object ( self : 'self)
     focused_block <- Some block
 
   method select_menu _ item =
-        let definition = List.assq item properties_definition in
-        let properties = properties definition in
+        let definition = List.assoc item properties_definition in
+        let properties = properties definition ~change:(fun _ -> generate self) in
         property_pane # remove_all;
         property_pane # add (properties :> draggable);
         property_pane # revalidate;
-        let b = block ~properties ~click:(fun block -> self # click_block block) item in
+        let b = block ~click:(fun block -> self # click_block block) item in
+        block_properties <- (b#window, properties)::block_properties;
         self#add (b :> draggable);
         b#invalidate (Rect.rect last_mouse_pos (80, 20));
         self # focus_block b;
         true
           
   method click_block block =
-    let properties_pane = block # get_properties in
+    let properties_pane = List.assq block # window block_properties in
     property_pane # remove_all;
     property_pane # add (properties_pane :> draggable);
     property_pane # revalidate;
     self # focus_block block
 end
+
+let block_canvas ?generate:(generate = fun _ -> ()) ()= new block_canvas generate
