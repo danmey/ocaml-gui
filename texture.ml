@@ -74,7 +74,8 @@ and image_height = 256
   (*     tid *)
 open GL
 open Glu
-  let gl_maketex texture  = 
+  let gl_maketex prev_tid texture  = 
+    BatOption.may (fun texture -> glDeleteTexture ~texture) prev_tid;
     let tid = glGenTexture() in
     glBindTexture BindTex.GL_TEXTURE_2D tid;
     glTexParameter ~target:TexParam.GL_TEXTURE_2D ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_NEAREST);

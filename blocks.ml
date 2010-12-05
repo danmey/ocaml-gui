@@ -165,15 +165,26 @@ let properties_definition =
     "scale", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
      "base", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };];
     "add", [];
+    "flat",[
+      "fx", Float { min = 0.; max = 1.; default = 0.25; step = 0.01 };
+      "fy", Float { min = 0.; max = 1.; default = 0.25; step = 0.01 };
+      "fw", Float { min = 0.; max = 1.; default = 0.5; step = 0.01 };
+      "fh", Float { min = 0.; max = 1.; default = 0.5; step = 0.01 };
+      "fg", Float { min = 0.; max = 1.; default = 0.25; step = 0.01 };
+      "bg", Float { min = 0.; max = 1.; default = 0.75; step = 0.01 };];
   ]
     
 
-class block_canvas generate = object ( self : 'self)
+class block_canvas generate draw = object ( self : 'self)
   inherit canvas as canvas
   inherit fixed as super
   val mutable last_mouse_pos = (0,0)
   val mutable focused_block = None
   val mutable block_properties = []
+  initializer
+    window.Window.painter <- draw self;
+
+  method draw = ()
   method mouse_down button pos =
     match button with
       | Event.Right ->
@@ -240,4 +251,4 @@ class block_canvas generate = object ( self : 'self)
     self # focus_block block
 end
 
-let block_canvas ?generate:(generate = fun _ -> ()) ()= new block_canvas generate
+let block_canvas ?draw:(draw=fun w rect -> ()) ?generate:(generate = fun _ -> ()) ()= new block_canvas generate draw

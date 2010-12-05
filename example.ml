@@ -61,57 +61,71 @@ open Blocks
 let texture_generator_view () =
   let kont = ref None in
   let open Texgen in
-    let control_pane = new texture_preview(* frame (Layout.fixed_vertical 5 25) *) in
-    let generate graphical_pane =
-      let op_of_properties edit_pane =
-        let ws = edit_pane # widgets in
-        let params = 
-          List.map (fun (_,w) ->
-            w # key, w # value) ws 
+      let control_pane = new texture_preview(* frame (Layout.fixed_vertical 5 25) *) in
+      let generate graphical_pane =
+        let op_of_properties edit_pane =
+          let ws = edit_pane # widgets in
+          let params = 
+            List.map (fun (_,w) ->
+              w # key, w # value) ws 
+          in
+          params
         in
-        params
-      in
-      let stack = graphical_pane#layout in
+        let stack = graphical_pane#layout in
       (* let stack = [] in *)
-      let rec loop = function
-        | ((block, prop)::_) :: xs -> 
-          Printf.printf "==%s:\n" block # key; 
-          let params = op_of_properties prop in
-          List.iter (fun (k, _) -> print_endline k) params;
-              let propf name = let Event.Float v =List.assoc name params in v in
-              let propi name = let Event.Int v = List.assoc name params in v in
+        let rec loop = function
+          | ((block, prop)::_) :: xs -> 
+            Printf.printf "==%s:\n" block # key; 
+            let params = op_of_properties prop in
+            List.iter (fun (k, _) -> print_endline k) params;
+            let propf name = let Event.Float v =List.assoc name params in v in
+            let propi name = let Event.Int v = List.assoc name params in v in
 
             (match block # key with
-            | "perlin" ->
-              Clouds { octaves = propi "octaves"; 
-                       persistence = propf "persistence"}
-            | "glow" -> Glow { x0 = propf "x0";
-                               y0 = propf "y0";
-                               atten = propf "atten";
-                               xr = propf "xr";
-                               yr = propf "yr";}
-            | "phi" -> Phi ({ scale = propf "scale";
-                              base = propf "base"; }, loop xs)
-            | "add" -> 
-              (match xs with
-                | (lst : (draggable * properties) list) :: _ -> Add (List.map (fun x -> loop [[x]]) lst))
-            | "light" ->
-              Light ({ lx = propf "lx"; 
-                       ly = propf "ly";
-                       ldx = propf "ldx";
-                       ldy = propf "ldy"; }, (loop xs)))
+              | "perlin" ->
+                Clouds { octaves = propi "octaves"; 
+                         persistence = propf "persistence"}
+              | "glow" -> Glow { x0 = propf "x0";
+                                 y0 = propf "y0";
+                                 atten = propf "atten";
+                                 xr = propf "xr";
+                                 yr = propf "yr";}
+              | "phi" -> Phi ({ scale = propf "scale";
+                                base = propf "base"; }, loop xs)
+              | "flat" -> Flat { fx = propf "fx"; 
+                                 fy = propf "fy"; 
+                                 fw = propf "fw"; 
+                                 fh = propf "fh"; 
+                                 fg = propf "fg"; 
+                                 bg = propf "bg"; }
+              | "add" -> 
+                (match xs with
+                  | (lst : (draggable * properties) list) :: _ -> Add (List.map (fun x -> loop [[x]]) lst))
+              | "light" ->
+                Light ({ lx = propf "lx"; 
+                         ly = propf "ly";
+                         ldx = propf "ldx";
+                         ldy = propf "ldy"; }, (loop xs)))
+        in
+        let op2 = loop stack in
+        Texgen.operator := Some op2;
+        Texgen.reset ();
       in
-      let op2 = loop stack in
-      Texgen.operator := Some op2;
-      let ti = Texture.Tga.gl_maketex Texgen.ar in
-      control_pane # set_image ti;
-    in
-    let graphical_pane = block_canvas ~generate () in
-    let (_, edit_properties) :: _ = properties_definition in
-    let edit_pane = properties edit_properties in
-    let split_control = splitter ~first:control_pane ~second:property_pane Widget.Vertical in
-    property_pane # add (edit_pane  :> fixed);
-    splitter ~first:split_control ~second:graphical_pane Widget.Horizontal
+      let prev_tid = ref None in
+      let draw w rect =
+        let tid = Texture.Tga.gl_maketex !prev_tid Texgen.ar in
+        prev_tid := Some tid;
+        control_pane # set_image tid;
+        Texgen.update_texture ();
+        w # draw;
+      in
+
+      let graphical_pane = block_canvas ~draw ~generate () in
+      let (_, edit_properties) :: _ = properties_definition in
+      let edit_pane = properties edit_properties in
+      let split_control = splitter ~first:control_pane ~second:property_pane Widget.Vertical in
+      property_pane # add (edit_pane  :> fixed);
+      splitter ~first:split_control ~second:graphical_pane Widget.Horizontal
 
 
       
