@@ -145,4 +145,10 @@ let draw_text x y text =
   render_bitmap_string (float x) (float y) Glut.GLUT_BITMAP_8_BY_13 text
 
 let text_width str = 
+  if not !Display.inited then
+    (ignore( Glut.glutInit Sys.argv );
+     Glut.glutInitDisplayMode [Glut.GLUT_RGBA; Glut.GLUT_DEPTH; Glut.GLUT_DOUBLE];
+     ignore (Glut.glutCreateWindow ~title:"OpenGL Demo");
+     Display.inited := true);
+
   Glut.glutBitmapLength ~font:Glut.GLUT_BITMAP_8_BY_13 ~str

@@ -72,7 +72,7 @@ let texture_generator_view () =
           params
         in
         let stack = graphical_pane#layout in
-      (* let stack = [] in *)
+        (* let stack = [] in *)
         let rec loop = function
           | ((block, prop)::_) :: xs -> 
             Printf.printf "==%s:\n" block # key; 
@@ -119,13 +119,25 @@ let texture_generator_view () =
         Texgen.update_texture ();
         w # draw;
       in
-
+      
       let graphical_pane = block_canvas ~draw ~generate () in
       let (_, edit_properties) :: _ = properties_definition in
       let edit_pane = properties edit_properties in
       let split_control = splitter ~first:control_pane ~second:property_pane Widget.Vertical in
       property_pane # add (edit_pane  :> fixed);
-      splitter ~first:split_control ~second:graphical_pane Widget.Horizontal
+      let main_view = splitter ~first:split_control ~second:graphical_pane Widget.Horizontal in
+      let main_frame = new frame (Layout.vertical_fixed ~sizes:[25]) in
+      main_frame#add ((menu_bar 
+                         [Entry ("Save", 
+                                 (fun () -> graphical_pane # write "canvas.txt"));
+                          Entry ("Open",
+                                 (fun () -> graphical_pane # read "canvas.txt"));
+                         ]) :> draggable);
+      main_frame#add (main_view :> draggable);
+      main_frame
+      
+        
+  
 
 
       

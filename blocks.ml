@@ -39,10 +39,12 @@ class properties props change = object (self : 'self)
         self # add (int_slider ~value:default ~min ~max ~step ~change name))
       props
 
-  method delete_properties =
-    List.iter (fun (_,widget) -> Window.remove self # window widget # window) widgets;
-    widgets <- []
-
+  (* method delete_properties = *)
+  (*   List.iter (fun (_,widget) -> Window.remove self # window widget # window) widgets; *)
+  (*   widgets <- [] *)
+  method get key =
+    let _, w = List.find (fun (_,w) -> w # key = key) self # widgets in
+    w
 end
 
 let properties
@@ -90,17 +92,19 @@ class block name click = object ( self : 'self )
            (grid (rect.Rect.w + dx), rect.Rect.h))
 
   method mouse_down b p =
-    click self;
-    super # mouse_down b p
+    if not (click b self) then
+      super # mouse_down b p
+    else
+      true
       
   method key = name
   method focus is = focus <- is
 
-  method paint state = caption_painter2 self # name 0 state
+  method paint state = caption_painter2 self # name state
         
 end
 
-let block ?click:(click = fun _ -> ()) name =
+let block ?click:(click = fun _ _ -> false) name =
   new block name click
 open BatFloat
 class texture_preview = object ( self : 'self )
@@ -130,13 +134,6 @@ class texture_preview = object ( self : 'self )
         glDisable GL_TEXTURE_2D) texid; ()
         
     method set_image id = texid <- Some id
-    method event wind ev = 
-      let open Texgen in
-      match ev with
-      (* | Event.Parameters ["octaves",Event.Float o] when wind == trigger#window -> *)
-      (*   texid <- Some (Texture.Tga.gl_maketex (Texgen.texture (Clouds { octaves = int_of_float o; persistence = 0.4; }))); *)
-      (*   true *)
-      | ev -> super # event wind ev
     
 end
 
@@ -230,25 +227,98 @@ class block_canvas generate draw = object ( self : 'self)
     block # focus true;
     focused_block <- Some block
 
+  method create_block item pos =
+    let definition = List.assoc item properties_definition in
+    let properties = properties definition ~change:(fun _ -> generate self) in
+    let b = block ~click:(fun button block -> self # click_block button block) item in
+    block_properties <- (b#window, properties)::block_properties;
+    self#add (b :> draggable);
+    b#invalidate pos;
+    self # focus_block b;
+    b, properties
+    
   method select_menu _ item =
-        let definition = List.assoc item properties_definition in
-        let properties = properties definition ~change:(fun _ -> generate self) in
         property_pane # remove_all;
-        property_pane # add (properties :> draggable);
+        property_pane # add ((snd (self # create_block item (Rect.rect last_mouse_pos (80, 20)))) :> draggable);
         property_pane # revalidate;
-        let b = block ~click:(fun block -> self # click_block block) item in
-        block_properties <- (b#window, properties)::block_properties;
-        self#add (b :> draggable);
-        b#invalidate (Rect.rect last_mouse_pos (80, 20));
-        self # focus_block b;
         true
           
-  method click_block block =
-    let properties_pane = List.assq block # window block_properties in
-    property_pane # remove_all;
-    property_pane # add (properties_pane :> draggable);
-    property_pane # revalidate;
-    self # focus_block block
+  method click_block button block =
+    match button with
+      | Event.Right ->
+        begin
+          let properties_pane = List.assq block # window block_properties in
+          property_pane # remove_all;
+          property_pane # add (properties_pane :> draggable);
+          property_pane # revalidate;
+          self # focus_block block;
+          true
+        end
+      | Event.Middle ->
+        begin
+          canvas # remove (block :> draggable);
+          BatList.remove_if (fun (b,_) -> b == block#window) block_properties;
+          property_pane # remove_all;
+          property_pane # revalidate;
+          true
+        end
+      | _ -> false
+
+  method write file_name =
+    let properties_string property_panel =
+      String.concat " " 
+        (List.map 
+           (fun (_,property) -> Printf.sprintf ":%s %s" (property # key) 
+             (match property # value with
+               | Event.Float f -> string_of_float f
+               | Event.Int i -> string_of_float (float i))) property_panel#widgets) 
+    in
+    let str = 
+      String.concat "\n"
+        (List.map
+           (fun (blockw, properties) ->
+             let block = self # find blockw in
+             let x,y,w,h = Rect.coords block # window. pos in
+             Printf.sprintf "(%s (rect %d %d %d %d) %s)" block # key x y w h (properties_string properties)) block_properties)
+    in
+    let ch = open_out file_name in
+    output_string ch str;
+    close_out ch
+
+  method read a = " " ^ a;()
+  method read file_name =
+    let process_line line =
+      let rec update_parameters properties offset line_rest =
+        try
+          Str.search_forward (Str.regexp ":\\([a-z]+\\)[ \t]+\\([.0-9]+\\)[ \t]*") line_rest offset;
+          let key, value = Str.matched_group 1 line_rest, Str.matched_group 2 line_rest in
+          let offset' = Str.match_end () in
+          print_endline key;
+          print_endline value;
+          let value' = float_of_string value in
+          
+          ((properties # get key) :> draggable) # set_value value';
+          update_parameters properties offset' line_rest
+        with Not_found -> ()
+      in
+      (* Str.search_forward  *)
+      (*   (Str.regexp  *)
+(*      "(\\([a-z]+\\)[ \t]+(rect \\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\))[ \t]+") line 0; *)
+      Str.search_forward (Str.regexp
+        "(\\([a-z]+\\)[ \t]+(rect[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]*\\(.*\\)") line 0;
+      let m i = int_of_string (Str.matched_group i line) in
+      let name , x, y, w, h = Str.matched_group 1 line, m 2, m 3, m 4, m 5 in
+      Printf.printf "(%s %d %d %d %d)" name x y w h;
+      print_endline name;
+     print_endline (string_of_int x);
+      print_endline (Str.matched_group 6 line);
+      flush stdout;
+       let block, properties = self # create_block name (Rect.rect (x,y) (w,h)) in 
+       update_parameters properties 0 (Str.matched_group 6 line);
+       ()
+    in
+      let lines = BatFile.lines_of file_name in
+      BatEnum.iter process_line lines
 end
 
 let block_canvas ?draw:(draw=fun w rect -> ()) ?generate:(generate = fun _ -> ()) ()= new block_canvas generate draw

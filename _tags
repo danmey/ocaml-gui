@@ -1,2 +1,3 @@
-<*.*>: gcc, use_util, pkg_batteries
+<*.*>: gcc, use_util, pkg_batteries, pkg_lablgtk2
+<*.mly>: use_menhir
 

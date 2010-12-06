@@ -178,6 +178,7 @@ end and draggable = object ( self : 'self )
   val mutable parent : canvas option = None
   method key = ""
   method value = Event.Float 0.
+  method set_value (value : float) = ()
   method set_parent c = parent <- Some c
   method name = ""
 
@@ -342,7 +343,7 @@ open BatFloat
 (* end *)
 open BatFloat
 
-let caption_painter text _ state rect =
+let caption_painter text state rect =
    let x, y, w, h = Rect.coords rect in
    button_painter state rect;
    let len = float (text_width text) in
@@ -352,7 +353,7 @@ let caption_painter text _ state rect =
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
 
-let caption_painter2 text _ state rect =
+let caption_painter2 text state rect =
   button_painter state rect;
    let x, y, w, h = Rect.coords rect in
    let len = float (text_width text) in
@@ -362,23 +363,23 @@ let caption_painter2 text _ state rect =
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
 
-class button = 
-  let normal_caption = "Push me!" in
-  let pushed_caption = "Pushed" in
+class button name click = 
 object ( self : 'self )
   inherit fixed as super
-  val mutable caption = normal_caption
-  method paint state = caption_painter caption 0 state
-  method mouse_down _ _ = caption <- pushed_caption; true
-  method mouse_up _ _ = caption <- normal_caption; true
+  method paint _ = caption_painter name state
+  method mouse_down b _ = click self b
 end
+
+let button ~name ~click = new button name click
 
 class label name = 
 object ( self : 'self )
   inherit fixed as super
   val mutable caption = name
-  method paint state = caption_painter2 caption 0 state
+  method paint state = caption_painter2 caption state
 end
+
+let label ~name ~click = new label name
 
 open BatInt
 
@@ -396,15 +397,16 @@ class slider name left right step default (change : slider -> unit)
 
   method clamp v = 
     let open BatFloat in
-    if v >= left then (if v <= right then v else right) else left
-   
+        if v >= left then (if v <= right then v else right) else left
+          
   method paint rect state = 
-    caption_painter (self#caption (self # clamp (drag_value +. value))) 0 rect state
+    caption_painter (self#caption (self # clamp (drag_value +. value))) rect state
 
   method drag _ _ (dx,_) =
     drag_value <- step *. (float dx);
 
   method value = Event.Float value
+  method set_value value' = value <- value'
   method key = name
   method drag_end =
     let v = value +. drag_value in
@@ -483,17 +485,19 @@ module Layout = struct
 
   let horizontal_fill 
       ?spacing:(spacing=Defaults.widget_height) 
+      ?offset:(offset=0)
       parent_rect _ c i =
     let (w,h) = Rect.size parent_rect in
     let s = w / c in
-    Rect.rect ((i * s)+spacing, 0) (s-2*spacing,h)
+    Rect.rect (offset + (i * s)+spacing, 0) (s-2*spacing- offset,h)
 
   let vertical_fill 
-      ?spacing:(spacing=Defaults.spacing) 
+      ?spacing:(spacing=Defaults.spacing)
+      ?offset:(offset=0)
       parent_rect _ c i =
     let (w,h) = Rect.size parent_rect in
     let s = h / c in
-    Rect.rect (0, (i * s)+spacing) (w, s-2*spacing)
+    Rect.rect (0, offset + (i * s)+spacing) (w, s-2*spacing - offset)
 
   let vertical 
       ?spacing:(spacing=Defaults.spacing) 
@@ -518,6 +522,30 @@ module Layout = struct
       Rect.rect (ofs, spacing) (width, h - spacing * 2)
 
   let fill parent_rect _ _ _ = Rect.rect (0,0) (Rect.size parent_rect)
+  open BatInt
+  let vertical_fixed 
+      ?sizes:(sizes=[Defaults.widget_height]) 
+      ?spacing:(spacing=Defaults.spacing)
+      parent_rect d c i =
+    let n = List.length sizes in
+    if i < n then
+      let size = List.nth sizes i in
+      vertical ~spacing ~size parent_rect d c i
+    else
+      let accum_size = BatList.reduce ( + ) sizes in
+      vertical_fill ~spacing ~offset:accum_size parent_rect d (c-n) (i-n)
+
+  let horizontal_fixed 
+      ?sizes:(sizes=[Defaults.widget_height]) 
+      ?spacing:(spacing=Defaults.spacing)
+      parent_rect d c i =
+    let n = List.length sizes in
+    if i < n then
+      let size = List.nth sizes i in
+      horizontal ~spacing ~size parent_rect d c i
+    else
+      let accum_size = BatList.reduce ( + ) sizes in
+      horizontal_fill ~spacing ~offset:accum_size parent_rect d (c-n) (i-n)
 end
 
 class frame layout = object ( self : 'self )
@@ -561,6 +589,29 @@ end
 let menu ~items ~pos ~select =
   new menu pos items select
 
+type menu_entry = 
+  | Entry of string * (unit -> unit)
+  | SubMenu of string * menu_entry list
+
+
+class menu_bar definition sizes =
+object (self : 'self)
+  inherit frame (Layout.horizontal_fixed ~sizes ~spacing:0)
+  initializer
+  let add_menu_entry = function
+    | Entry (name, f) ->
+      self # add (button ~name ~click:(fun _ _ -> f (); true))
+  in
+  List.iter add_menu_entry definition
+end
+
+let menu_bar definition =   
+  let entry_size = function Entry (name, _ ) -> text_width name + 5 in
+  let sizes = List.map entry_size definition in
+  new menu_bar definition sizes
+    
+
+    
 (* class content_pane = object (self : 'self) *)
 
 (* let ref_pane content:= *)
