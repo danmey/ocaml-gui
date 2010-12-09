@@ -192,7 +192,7 @@ class block_canvas generate draw = object ( self : 'self)
         self # layout; true
       | _ -> super # mouse_down button pos
 
-  method layout : ((draggable * properties) list list) =
+  method layout =
     let open BatInt in
     let rects = List.map (fun (_,w) -> w # window.pos) widgets in
     let block_rects = List.map (fun (_,w) -> w # window.pos,w) widgets in
@@ -248,9 +248,16 @@ class block_canvas generate draw = object ( self : 'self)
                       | Tree (r,lst) -> Printf.sprintf "(%s %s)"
                         ((List.assoc r block_rects)#key)
                         (String.concat " " (List.map print_tree lst))
+      in
+      print_endline (print_tree tree));
+    (match lst with
+      | hd :: tl -> let tree = tree_loop lst hd in
+                    let rec block_tree = function
+                      | Tree (r,lst) ->
+                        Tree ((List.assoc r widget_properties, (List.assoc r block_rects)), List.map block_tree lst)
                     in
-                    print_endline (print_tree tree));
-    []
+                    block_tree tree)
+      
 
   method focus_block block =
     BatOption.may (fun block -> block # focus false) focused_block;
