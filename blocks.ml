@@ -3,7 +3,6 @@ open Draw
 open Window
 open GL
 open Glu
-type 'a block_tree = Block of 'a * 'a list
 type stickiness = TopBottom | LeftRight
 
 let expand_rect_left dx rect constr =
@@ -18,7 +17,6 @@ let block_cmp l r =
   else
     r.Rect.x - l.Rect.x
 
-type tree = Tree of string * tree list
 
 type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
 type property_type = 
@@ -171,7 +169,7 @@ let properties_definition =
       "bg", Float { min = 0.; max = 1.; default = 0.75; step = 0.01 };];
   ]
     
-
+type 'a block_tree = Tree of 'a * 'a block_tree list
 class block_canvas generate draw = object ( self : 'self)
   inherit canvas as canvas
   inherit fixed as super
@@ -209,19 +207,51 @@ class block_canvas generate draw = object ( self : 'self)
           | a :: b -> stack_loop ((a @ [x]) :: b) cur_y xs)
       | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs
       | [] -> acc in
-    let lst = stack_loop [[]] (List.hd sorted).Rect.y sorted in
-    let rec loop = function
-      | lst::xs -> 
-        let props  = List.map 
-          (fun a -> 
-            List.assoc a block_rects, 
+      let open Pervasives in
+        let rec loop acc = function
+          | ({ Rect.x=x1; Rect.w=w1; } as r1) :: xs, ({ Rect.x=x2; Rect.w=w2; } as r2) :: ys -> 
+            if x2 >= x1 && x2 <= x1 + w1 && x2 + w2 <= x1 + w1 then
+              match acc with
+                | [] -> loop [r1, [r2]] ((r1 :: xs), ys)
+                | (r, a) :: rest when r = r1 -> loop ((r, a @ [r2]) :: rest) ((r1 :: xs), ys)
+                | rest -> loop (rest @ [r1, [r2]]) ((r1 :: xs), ys)
+            else
+              loop acc (xs, (r2::ys))
+          | [],_ -> List.rev acc
+          | _,[] -> List.rev acc in
+        let rec flat_loop = function
+        | row :: [] -> loop [] (row, [])
+        | [] -> []
+        | row1 :: row2 :: xs  -> loop [] (row1, row2) @ flat_loop (row2::xs) in
+        let rec tree_loop nodes =
+          function
+            | (a, xs) -> Tree (a, List.map (fun el -> try tree_loop nodes (el, (List.assoc el nodes)) with Not_found -> Tree (el, []) ) xs)
+        in
+    let rec loop2 = function
+      | lst::xs ->
+        let props  = List.map
+          (fun a ->
+            List.assoc a block_rects,
             List.assoc a widget_properties) lst in
-          props :: loop xs
+          props :: loop2 xs
       (* | a :: [] -> print_endline ("top: " ^ (snd (List.assq a widget_rects))#key) *)
       | [] -> []
     in
-    List.rev (loop lst)
-      
+    let lst = List.rev (stack_loop [[]] (List.hd sorted).Rect.y sorted) in
+    let lst = (flat_loop lst) in
+    print_endline "-----";
+    List.iter (fun (a, lst) -> Printf.printf "(%s:: %s)\n" (Rect.string_of_rect a) (String.concat " | " (List.map Rect.string_of_rect lst))) lst;
+    (match lst with
+        [] -> ()
+      | hd :: tl -> let tree = tree_loop lst hd in
+                    let rec print_tree = function
+                      | Tree (r,lst) -> Printf.sprintf "(%s %s)"
+                        ((List.assoc r block_rects)#key)
+                        (String.concat " " (List.map print_tree lst))
+                    in
+                    print_endline (print_tree tree));
+    []
+
   method focus_block block =
     BatOption.may (fun block -> block # focus false) focused_block;
     block # focus true;
