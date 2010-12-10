@@ -75,32 +75,39 @@ let texture_generator_view () =
         let rec loop = function
           | Tree ((prop, block), lst) ->
             let params = op_of_properties prop in
-            let propf name = let Event.Float v = List.assoc name params in v in
-            let propi name = let Event.Int v = List.assoc name params in v in
+            let f name = let Event.Float v = List.assoc name params in v in
+            let i name = let Event.Int v = List.assoc name params in v in
             (match block # key with
               | "perlin" ->
-                Clouds { octaves = propi "octaves";
-                         persistence = propf "persistence"}
-              | "glow" -> Glow { x0 = propf "x0";
-                                 y0 = propf "y0";
-                                 atten = propf "atten";
-                                 xr = propf "xr";
-                                 yr = propf "yr";}
-              | "phi" -> Phi ({ scale = propf "scale";
-                                base = propf "base"; }, loop (List.hd lst))
-              | "flat" -> Flat { fx = propf "fx";
-                                 fy = propf "fy";
-                                 fw = propf "fw";
-                                 fh = propf "fh";
-                                 fg = propf "fg";
-                                 bg = propf "bg"; }
+                Clouds { octaves = i "octaves";
+                         persistence = f "persistence"}
+              | "glow" -> Glow { x0 = f "x0";
+                                 y0 = f "y0";
+                                 atten = f "atten";
+                                 xr = f "xr";
+                                 yr = f "yr";}
+              | "phi" -> Phi ({ scale = f "scale";
+                                base = f "base"; }, loop (List.hd lst))
+              | "flat" -> Flat { fx = f "fx";
+                                 fy = f "fy";
+                                 fw = f "fw";
+                                 fh = f "fh";
+                                 fg = f "fg";
+                                 bg = f "bg"; }
               | "add" ->
                     Add (List.map loop lst)
               | "light" ->
-                Light ({ lx = propf "lx";
-                         ly = propf "ly";
-                         ldx = propf "ldx";
-                         ldy = propf "ldy"; }, loop (List.hd lst)))
+                Light ({ lx = f "lx";
+                         ly = f "ly";
+                         ldx = f "ldx";
+                         ldy = f "ldy"; }, loop (List.hd lst))
+              | "distort" ->
+                let [op1;op2;op3] = lst in
+                Distort (Radial, loop op1, loop op2, loop op3)
+              | "rgb" -> let [r;g;b] = lst in
+                         Rgb ({ rp = f "rp";
+                         gp = f "gp";
+                         bp = f "bp";}, loop r, loop g, loop b))
         in
         let op2 = loop tree in
         Texgen.operator := Some op2;

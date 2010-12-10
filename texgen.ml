@@ -87,11 +87,12 @@ type operator =
   | Flat of flat_params
   | Glow of glow_params
   | Hsv of hsv_params * operator * operator * operator
-  | Rgb of rgb_params
+  | Rgb of rgb_params * operator * operator * operator
   | Pixels of pixels_params
   | Blur of blur_params
   | Phi of phi_params * operator
   | Out
+
 
 module Layer = struct
   let make f = f
@@ -356,9 +357,9 @@ let distort dst dir pw Radial =
     let yd = cos raddir * pw (x, y) * ampl in
     dst (xd, yd)
 
-
+type channels = Ch of float | Ch3 of (float * float * float)
 let rec value op =
-  match op with
+  (match op with
     | Add lst -> add (lift_lst lst)
     | Modulate lst -> modulate (lift_lst lst)
       | Clouds params -> clouds params
@@ -391,13 +392,23 @@ let rec value op =
         let v' = sqrt ((x-.x0)*.(x-.x0)*.xr +. (y-.y0)*.(y-.y0)*.yr) in
         let v = BatFloat.pow v' atten in
         v
-      | Phi ({ base; scale; }, op) -> fun (x, y) -> scale *. (value op (x,y) +. base)
-     
+      | Phi ({ base; scale; }, op) -> fun (x, y) -> scale *. (value op (x,y) +. base))
+                
+and channel_value op p = Ch (value op p)
       (* | Hsv (op1, op2, op3, params) -> hsv (value op1) (value op2) (value op3) params  *)
-
-
 and lift_lst lst = BatList.map value lst
-;;
+and value3 op =
+  (match op with
+    | Rgb ({rp; gp; bp; }, r,g,b) ->
+      fun point ->
+        let r = value r point in
+        let g = value g point in
+        let b = value b point in
+      r*.rp, g*.gp, b*.bp)
+and channel3_value op p = Ch3 (value3 op p) 
+and get op = match op with
+  | Rgb _ -> channel3_value op
+  | op -> channel_value op
 
 let layer op x y = 
   let v = value op ((float y /. 256.0), (float x /. 256.0)) in
@@ -426,13 +437,17 @@ let update_texture () =
         let min = ref ( 1000000.) in
         let y =  !current_line in
         for x = 0 to 256 - 1 do
-          let v = value op ((float y /. 256.0), (float x /. 256.0)) in
-          if v > !max then max := v;
-          if v < !min then min := v;
-          let v' = int_of_float (v *. 255.0) in 
-          A.set ar [|y;x;0|] v';
-          A.set ar [|y;x;1|] v';
-          A.set ar [|y;x;2|] v';
+          let r,g,b = match get op ((float y /. 256.0), (float x /. 256.0)) with
+            | Ch v -> v,v,v
+            | Ch3 v -> v in
+          (* if v > !max then max := v; *)
+          (* if v < !min then min := v; *)
+          let r' = int_of_float (r *. 255.0) in 
+          let g' = int_of_float (g *. 255.0) in 
+          let b' = int_of_float (b *. 255.0) in 
+          A.set ar [|y;x;0|] r';
+          A.set ar [|y;x;1|] g';
+          A.set ar [|y;x;2|] b';
           A.set ar [|y;x;3|] 255;
         done;
         current_line := !current_line + 1;

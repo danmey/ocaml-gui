@@ -167,6 +167,11 @@ let properties_definition =
       "fh", Float { min = 0.; max = 1.; default = 0.5; step = 0.01 };
       "fg", Float { min = 0.; max = 1.; default = 0.25; step = 0.01 };
       "bg", Float { min = 0.; max = 1.; default = 0.75; step = 0.01 };];
+    "distort",[];
+      "rgb", [
+        "rp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+        "gp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+        "bp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };]
   ]
     
 type 'a block_tree = Tree of 'a * 'a block_tree list
@@ -268,17 +273,18 @@ class block_canvas generate draw = object ( self : 'self)
     let definition = List.assoc item properties_definition in
     let properties = properties definition ~change:(fun _ -> generate self) in
     let b = block ~click:(fun button block -> self # click_block button block) item in
+    property_pane # remove_all;
     block_properties <- (b#window, properties)::block_properties;
     self#add (b :> draggable);
     b#invalidate pos;
     self # focus_block b;
+    property_pane # revalidate;
     b, properties
     
   method select_menu _ item =
-        property_pane # remove_all;
-        property_pane # add ((snd (self # create_block item (Rect.rect last_mouse_pos (80, 20)))) :> draggable);
-        property_pane # revalidate;
-        true
+    self # create_block item (Rect.rect last_mouse_pos (80, 20));
+    property_pane # revalidate;
+    true
           
   method click_block button block =
     match button with
