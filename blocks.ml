@@ -209,21 +209,22 @@ class block_canvas generate draw = object ( self : 'self)
       | x :: xs when x.Rect.y = cur_y ->
         (match acc with
           | [] -> stack_loop ([x] :: acc) cur_y xs
-          | a :: b -> stack_loop ((a @ [x]) :: b) cur_y xs)
+          | a :: b -> stack_loop (([x] @ a) :: b) cur_y xs)
       | x :: xs -> stack_loop ([x] :: acc) x.Rect.y xs
-      | [] -> acc in
+      | [] -> List.rev acc in
       let open Pervasives in
         let rec loop acc = function
           | ({ Rect.x=x1; Rect.w=w1; } as r1) :: xs, ({ Rect.x=x2; Rect.w=w2; } as r2) :: ys -> 
-            if x2 >= x1 && x2 <= x1 + w1 && x2 + w2 <= x1 + w1 then
+            if x2 >= x1 && x2 < x1 + w1 (*&& x2 + w2 <= x1 + w1*) then
               match acc with
                 | [] -> loop [r1, [r2]] ((r1 :: xs), ys)
                 | (r, a) :: rest when r = r1 -> loop ((r, a @ [r2]) :: rest) ((r1 :: xs), ys)
                 | rest -> loop (rest @ [r1, [r2]]) ((r1 :: xs), ys)
             else
-              loop acc (xs, (r2::ys))
-          | [],_ -> List.rev acc
-          | _,[] -> List.rev acc in
+              acc @ (loop [] (xs, (r2::ys)))
+          | [],_ -> []
+          | _,[] -> []
+        in
         let rec flat_loop = function
         | row :: [] -> loop [] (row, [])
         | [] -> []
@@ -242,10 +243,17 @@ class block_canvas generate draw = object ( self : 'self)
       (* | a :: [] -> print_endline ("top: " ^ (snd (List.assq a widget_rects))#key) *)
       | [] -> []
     in
-    let lst = List.rev (stack_loop [[]] (List.hd sorted).Rect.y sorted) in
+    let lst = stack_loop [[]] (List.hd sorted).Rect.y sorted in
+    print_endline "stack_loop-----";
+    List.iter (fun (lst) -> Printf.printf "(%s)\n" (String.concat " | " (List.map Rect.string_of_rect lst))) lst;
+    
     let lst = (flat_loop lst) in
     print_endline "-----";
     List.iter (fun (a, lst) -> Printf.printf "(%s:: %s)\n" (Rect.string_of_rect a) (String.concat " | " (List.map Rect.string_of_rect lst))) lst;
+    print_endline "-----";
+    print_endline "-----";
+    print_endline "-----";
+    print_endline "-----";
     (match lst with
         [] -> ()
       | hd :: tl -> let tree = tree_loop lst hd in
@@ -255,6 +263,7 @@ class block_canvas generate draw = object ( self : 'self)
                         (String.concat " " (List.map print_tree lst))
       in
       print_endline (print_tree tree));
+    flush stdout;
     (match lst with
       | hd :: tl -> let tree = tree_loop lst hd in
                     let rec block_tree = function

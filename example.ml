@@ -102,16 +102,16 @@ let texture_generator_view () =
                          ldx = f "ldx";
                          ldy = f "ldy"; }, loop (List.hd lst))
               | "distort" ->
-                let [op1;op2;op3] = lst in
+                let op1::op2::op3::_ = lst in
                 Distort (Radial, loop op1, loop op2, loop op3)
-              | "rgb" -> let [r;g;b] = lst in
+              | "rgb" -> Printf.printf "lst::%d\n" (List.length lst); let r::g::b::_ = lst in
                          Rgb ({ rp = f "rp";
-                         gp = f "gp";
-                         bp = f "bp";}, loop r, loop g, loop b))
+                                gp = f "gp";
+                                bp = f "bp";}, loop r, loop g, loop b))
         in
-        let op2 = loop tree in
-        Texgen.operator := Some op2;
-        Texgen.reset ();
+        (* let op2 = loop tree in *)
+        (* Texgen.operator := Some op2; *)
+        (* Texgen.reset (); *)
         ()
       in
       let prev_tid = ref None in

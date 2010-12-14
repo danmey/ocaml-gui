@@ -358,6 +358,7 @@ let distort dst dir pw Radial =
     dst (xd, yd)
 
 type channels = Ch of float | Ch3 of (float * float * float)
+type arity = int
 let rec value op =
   (match op with
     | Add lst -> add (lift_lst lst)
@@ -401,14 +402,26 @@ and value3 op =
   (match op with
     | Rgb ({rp; gp; bp; }, r,g,b) ->
       fun point ->
-        let r = value r point in
-        let g = value g point in
-        let b = value b point in
-      r*.rp, g*.gp, b*.bp)
+        let Ch r = get r point in
+        let Ch g = get g point in
+        let Ch b = get b point in
+      r*.rp, g*.gp, b*.bp
+    | Add lst ->
+      fun point ->
+        let f x = let Ch3 r = get x point in r in
+        (List.fold_left (fun (ar,ag,ab) (r,g,b) ->
+          ar+.r, ag+.g, ab+.b) (0.,0.,0.) (List.map f lst)))
+    
+        
+    
 and channel3_value op p = Ch3 (value3 op p) 
-and get op = match op with
-  | Rgb _ -> channel3_value op
-  | op -> channel_value op
+and get op =
+  let f = match get_arity op with 3 -> channel3_value | 1 -> channel_value in
+  f op
+and get_arity = function
+  | Rgb _ -> 3
+  | Add lst -> let a::_ = lst in get_arity a
+  | op -> 1
 
 let layer op x y = 
   let v = value op ((float y /. 256.0), (float x /. 256.0)) in
