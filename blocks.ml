@@ -217,18 +217,18 @@ class block_canvas generate draw = object ( self : 'self)
           | ({ Rect.x=x1; Rect.w=w1; } as r1) :: xs, ({ Rect.x=x2; Rect.w=w2; } as r2) :: ys -> 
             if x2 >= x1 && x2 < x1 + w1 (*&& x2 + w2 <= x1 + w1*) then
               match acc with
-                | [] -> loop [r1, [r2]] ((r1 :: xs), ys)
+                | [] ->  loop [r1, [r2]] ((r1 :: xs), ys)
                 | (r, a) :: rest when r = r1 -> loop ((r, a @ [r2]) :: rest) ((r1 :: xs), ys)
-                | rest -> loop (rest @ [r1, [r2]]) ((r1 :: xs), ys)
+                | rest -> loop ([r1, [r2]]@ rest ) ((r1 :: xs), ys)
             else
-              acc @ (loop [] (xs, (r2::ys)))
-          | [],_ -> []
-          | _,[] -> []
+              loop acc (xs, (r2::ys))
+          | [],_ -> acc
+          | _,[] -> acc
         in
         let rec flat_loop = function
+        | row1 :: row2 :: xs  -> loop [] (row1, row2) @ flat_loop (row2::xs)
         | row :: [] -> loop [] (row, [])
-        | [] -> []
-        | row1 :: row2 :: xs  -> loop [] (row1, row2) @ flat_loop (row2::xs) in
+        | [] -> [] in
         let rec tree_loop nodes =
           function
             | (a, xs) -> Tree (a, List.map (fun el -> try tree_loop nodes (el, (List.assoc el nodes)) with Not_found -> Tree (el, []) ) xs)
