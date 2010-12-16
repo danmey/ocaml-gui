@@ -74,6 +74,14 @@ type phi_params =
     { scale : float;
       base : float; }
 
+type phi3_params =
+    { scale1 : float;
+      base1  : float; 
+      scale2 : float;
+      base2  : float; 
+      scale3 : float;
+      base3  : float; }
+
 type operator = 
   | Add of operator list
   | Modulate of operator list
@@ -91,7 +99,8 @@ type operator =
   | Pixels of pixels_params
   | Blur of blur_params
   | Phi of phi_params * operator
-  | Out
+  | Phi3 of phi3_params * operator
+
 
 
 module Layer = struct
@@ -236,11 +245,11 @@ let light op { lx; ly; ldx; ldy } =
   (*   done; *)
   (*   Layer.make (fun u v -> arr.(u*w+v)) *)
 
-let hsv op1 op2 op3  { hp; sp; vp; } =
-  fun (u, v) ->
-    let h = hp *. op1 u v in
-    let s = sp *. op2 u v in
-    let v = vp *. op3 u v in
+let hsv op1 op2 op3 { hp; sp; vp; } =
+  fun p ->
+    let h = hp *. op1 p in
+    let s = sp *. op2 p in
+    let v = vp *. op3 p in
     let h' = mod_float h 1.0 in
     let hi = int_of_float (floor (360. *. h'/.60.0)) mod 6 in
     let f = h' *. 360. /. 60. -. float_of_int hi in
@@ -348,13 +357,12 @@ let transform op { ox; oy; tx; ty; sx; sy; rot; } =
     let cur_y = (start_y + y * dy2) + y * dy1 in
     op (cur_x, cur_y)
 
-let distort dst dir pw Radial =
+let distort Radial dir pw dst =
   let open BatFloat in
-  let ampl = 100. in
   fun (x, y) ->
     let raddir = dir (x, y) * 2. * pi in
-    let xd = sin raddir * pw (x, y) * ampl in
-    let yd = cos raddir * pw (x, y) * ampl in
+    let xd = sin raddir * pw (x, y) in
+    let yd = cos raddir * pw (x, y) in
     dst (xd, yd)
 
 type channels = Ch of float | Ch3 of (float * float * float)
@@ -383,7 +391,7 @@ let rec value op =
         let v2 = value op2 point in
         if op v1 v2 then v1 else v2
       | Light (params, op) -> light (value op) params
-      | Distort (Radial,op1, op2, op3) -> distort (value op1) (value op2) (value op3) Radial
+      | Distort (Radial,op1, op2, op3) -> distort Radial (value op1) (value op2) (value op3)
       | Flat { fx; fy; fw; fh; fg; bg; } ->
         fun (x,y) ->
           if x >= fx && x < fx+.fw
@@ -396,7 +404,6 @@ let rec value op =
       | Phi ({ base; scale; }, op) -> fun (x, y) -> scale *. (value op (x,y) +. base))
                 
 and channel_value op p = Ch (value op p)
-      (* | Hsv (op1, op2, op3, params) -> hsv (value op1) (value op2) (value op3) params  *)
 and lift_lst lst = BatList.map value lst
 and value3 op =
   (match op with
@@ -406,13 +413,26 @@ and value3 op =
         let Ch g = get g point in
         let Ch b = get b point in
       r*.rp, g*.gp, b*.bp
+    | Distort (Radial,op1, op2, op3) -> 
+        distort Radial (value op1) (value op2) (value3 op3)
+    | Hsv (params, op1, op2, op3) -> 
+        hsv (value op1) (value op2) (value op3) params
     | Add lst ->
       fun point ->
         let f x = let Ch3 r = get x point in r in
         (List.fold_left (fun (ar,ag,ab) (r,g,b) ->
-          ar+.r, ag+.g, ab+.b) (0.,0.,0.) (List.map f lst)))
-    
-        
+          ar+.r, ag+.g, ab+.b) (0.,0.,0.) (List.map f lst))
+    | Phi3 ({ scale1;
+              base1;
+              scale2;
+              base2;
+              scale3;
+              base3; }, op) ->
+      fun p ->
+        let r,g,b = value3 op p in
+        scale1 *. (r +. base1),
+        scale2 *. (g +. base2),
+        scale2 *. (b +. base3))
     
 and channel3_value op p = Ch3 (value3 op p) 
 and get op =
@@ -420,7 +440,10 @@ and get op =
   f op
 and get_arity = function
   | Rgb _ -> 3
+  | Hsv _ -> 3
+  | Phi3 _ -> 3
   | Add lst -> let a::_ = lst in get_arity a
+  | Distort (_,_,_,dst) -> get_arity dst
   | op -> 1
 
 let layer op x y = 

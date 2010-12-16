@@ -107,11 +107,24 @@ let texture_generator_view () =
               | "rgb" -> Printf.printf "lst::%d\n" (List.length lst); let r::g::b::_ = lst in
                          Rgb ({ rp = f "rp";
                                 gp = f "gp";
-                                bp = f "bp";}, loop r, loop g, loop b))
+                                bp = f "bp";}, loop r, loop g, loop b)
+              | "hsv" -> let r::g::b::_ = lst in
+                         Hsv ({ hp = f "hp";
+                                sp = f "sp";
+                                vp = f "vp";}, loop r, loop g, loop b)
+              | "phi3" -> Phi3 ({ scale1 = f "scale1";
+                                 base1 = f "base1";
+                                 scale2 = f "scale2";
+                                 base2 = f "base2"; 
+                                 scale3 = f "scale3";
+                                 base3 = f "base3"; 
+                               }, 
+                               loop (List.hd lst)))
+
         in
-        (* let op2 = loop tree in *)
-        (* Texgen.operator := Some op2; *)
-        (* Texgen.reset (); *)
+        let op2 = loop tree in
+        Texgen.operator := Some op2;
+        Texgen.reset ();
         ()
       in
       let prev_tid = ref None in

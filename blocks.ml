@@ -171,7 +171,19 @@ let properties_definition =
       "rgb", [
         "rp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
         "gp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
-        "bp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };]
+        "bp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };];
+      "hsv", [
+        "hp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+        "sp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+        "vp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };];
+      "phi3", [
+        "scale1", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+        "base1", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };
+        "scale2", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+        "base2", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };
+        "scale3", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+        "base3", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };
+      ];
   ]
     
 type 'a block_tree = Tree of 'a * 'a block_tree list
@@ -219,7 +231,7 @@ class block_canvas generate draw = object ( self : 'self)
               match acc with
                 | [] ->  loop [r1, [r2]] ((r1 :: xs), ys)
                 | (r, a) :: rest when r = r1 -> loop ((r, a @ [r2]) :: rest) ((r1 :: xs), ys)
-                | rest -> loop ([r1, [r2]]@ rest ) ((r1 :: xs), ys)
+                | rest -> loop ([r1, [r2]] @ rest ) ((r1 :: xs), ys)
             else
               loop acc (xs, (r2::ys))
           | [],_ -> acc
@@ -247,7 +259,9 @@ class block_canvas generate draw = object ( self : 'self)
     print_endline "stack_loop-----";
     List.iter (fun (lst) -> Printf.printf "(%s)\n" (String.concat " | " (List.map Rect.string_of_rect lst))) lst;
     
-    let lst = (flat_loop lst) in
+    match lst with
+      | (r::_) :: [] -> Tree ((List.assoc r widget_properties, (List.assoc r block_rects)), [])
+      | lst -> (let lst = flat_loop lst in
     print_endline "-----";
     List.iter (fun (a, lst) -> Printf.printf "(%s:: %s)\n" (Rect.string_of_rect a) (String.concat " | " (List.map Rect.string_of_rect lst))) lst;
     print_endline "-----";
@@ -255,22 +269,24 @@ class block_canvas generate draw = object ( self : 'self)
     print_endline "-----";
     print_endline "-----";
     (match lst with
-        [] -> ()
-      | hd :: tl -> let tree = tree_loop lst hd in
-                    let rec print_tree = function
-                      | Tree (r,lst) -> Printf.sprintf "(%s %s)"
-                        ((List.assoc r block_rects)#key)
-                        (String.concat " " (List.map print_tree lst))
-      in
-      print_endline (print_tree tree));
-    flush stdout;
-    (match lst with
-      | hd :: tl -> let tree = tree_loop lst hd in
-                    let rec block_tree = function
-                      | Tree (r,lst) ->
-                        Tree ((List.assoc r widget_properties, (List.assoc r block_rects)), List.map block_tree lst)
+      | hd :: tl -> 
+        begin
+          let tree = tree_loop lst hd in
+          let rec print_tree = function
+            | Tree (r,lst) -> Printf.sprintf "(%s %s)"
+              ((List.assoc r block_rects)#key)
+              (String.concat " " (List.map print_tree lst))
                     in
-                    block_tree tree)
+          print_endline (print_tree tree);
+          tree;
+          flush stdout;
+          let rec block_tree = function
+            | Tree (r,lst) ->
+              Tree ((List.assoc r widget_properties, (List.assoc r block_rects)), List.map block_tree lst)
+          in
+          block_tree tree
+        end))
+    
       
 
   method focus_block block =
