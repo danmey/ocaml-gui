@@ -149,7 +149,6 @@ let gradient_u = Memo.make (lift (fun x -> (sin x +. 1.0) *. 0.5) noise)
 let gradient_v = Memo.make (lift (fun x -> (cos x +. 1.0) *. 0.5) noise)
 
 let gradient_u = Memo.make (lift (fun x -> (sin x)) noise)
-
 let gradient_v = Memo.make (lift (fun x -> (cos x)) noise)
 
 let colorize color_lst layer =
@@ -201,13 +200,15 @@ let clouds { octaves; persistence } =
       gen_list (((List.hd lst) *. 2.) :: lst) (a-1) 
     else lst 
   in
-  let clouds_a = gen_list [8./.256.] octaves in
+  let clouds_a = gen_list [8./.256.] (octaves - 1) in
   let clouds = List.map (fun a -> cloud a a) clouds_a in
   fun (x, y) -> 
-    fst ((List.fold_left 
-           (fun (acc,p) cl -> 
-             acc +. p *. (cl (x, y)), p *. persistence))
-           (0.0, persistence) clouds)
+    let v,_,d = ((List.fold_left 
+           (fun (acc,p,d) cl -> 
+             acc +. p *. 0.65 +.  p *. (cl (x, y)), p *. persistence, d+.p*.1.35))
+           (0.0, persistence,0.) clouds) in
+    v/.d
+      
       
 let wrap c = c land (texsize - 1)
 
@@ -466,18 +467,19 @@ let ar_src = Array.create (256*256) 0.
 let current_line = ref 0
 let working = ref true
 let operator = ref None
+let max = ref (-1000000.)
+let min = ref ( 1000000.)
+
 let update_texture () =
   (if !working then
       BatOption.may (fun op ->
-        let max = ref (-1000000.) in
-        let min = ref ( 1000000.) in
         let y =  !current_line in
         for x = 0 to 256 - 1 do
           let r,g,b = match get op ((float y /. 256.0), (float x /. 256.0)) with
             | Ch v -> v,v,v
             | Ch3 v -> v in
-          (* if v > !max then max := v; *)
-          (* if v < !min then min := v; *)
+          if r > !max then max := r;
+          if r < !min then min := r;
           let r' = int_of_float (r *. 255.0) in 
           let g' = int_of_float (g *. 255.0) in 
           let b' = int_of_float (b *. 255.0) in 
@@ -489,7 +491,12 @@ let update_texture () =
         current_line := !current_line + 1;
         if !current_line > 255 then
             (current_line := 0;
-            working := false);
+            working := false;
+            Printf.printf "max: %f, min: %f\n" !max !min;
+            flush stdout;
+            max := (-1000000.);
+            min := ( 1000000.);
+);
   ) !operator)
 
 let reset () =
