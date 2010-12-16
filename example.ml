@@ -103,7 +103,7 @@ let texture_generator_view () =
                          ldy = f "ldy"; }, loop (List.hd lst))
               | "distort" ->
                 let op1::op2::op3::_ = lst in
-                Distort (Radial, loop op1, loop op2, loop op3)
+                Distort ({dtype=Radial; dscale = f "dscale"}, loop op1, loop op2, loop op3)
               | "rgb" -> Printf.printf "lst::%d\n" (List.length lst); let r::g::b::_ = lst in
                          Rgb ({ rp = f "rp";
                                 gp = f "gp";

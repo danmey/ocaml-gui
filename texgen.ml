@@ -70,6 +70,8 @@ type blur_params =
 type distort_mode =
   | Radial
 
+type distort_params = { dtype : distort_mode; dscale : float }
+ 
 type phi_params =
     { scale : float;
       base : float; }
@@ -91,7 +93,7 @@ type operator =
   | Mask of mask_mode * operator
   | Mix of mix_mode * operator * operator
   | Light of light_params * operator
-  | Distort of distort_mode * operator * operator * operator
+  | Distort of distort_params * operator * operator * operator
   | Flat of flat_params
   | Glow of glow_params
   | Hsv of hsv_params * operator * operator * operator
@@ -358,13 +360,13 @@ let transform op { ox; oy; tx; ty; sx; sy; rot; } =
     let cur_y = (start_y + y * dy2) + y * dy1 in
     op (cur_x, cur_y)
 
-let distort Radial dir pw dst =
+let distort Radial scale dir pw dst =
   let open BatFloat in
   fun (x, y) ->
     let raddir = dir (x, y) * 2. * pi in
-    let xd = sin raddir * pw (x, y) in
-    let yd = cos raddir * pw (x, y) in
-    dst (xd, yd)
+    let xd = sin raddir * pw (x, y) /. scale in
+    let yd = cos raddir * pw (x, y) /. scale in
+    dst (x+xd, y+yd)
 
 type channels = Ch of float | Ch3 of (float * float * float)
 type arity = int
@@ -392,7 +394,7 @@ let rec value op =
         let v2 = value op2 point in
         if op v1 v2 then v1 else v2
       | Light (params, op) -> light (value op) params
-      | Distort (Radial,op1, op2, op3) -> distort Radial (value op1) (value op2) (value op3)
+      | Distort ({dtype=Radial;dscale},op1, op2, op3) -> distort Radial dscale (value op1) (value op2) (value op3)
       | Flat { fx; fy; fw; fh; fg; bg; } ->
         fun (x,y) ->
           if x >= fx && x < fx+.fw
@@ -414,8 +416,8 @@ and value3 op =
         let Ch g = get g point in
         let Ch b = get b point in
       r*.rp, g*.gp, b*.bp
-    | Distort (Radial,op1, op2, op3) -> 
-        distort Radial (value op1) (value op2) (value3 op3)
+    | Distort ({dtype=Radial;dscale},op1, op2, op3) -> 
+        distort Radial dscale (value op1) (value op2) (value3 op3)
     | Hsv (params, op1, op2, op3) -> 
         hsv (value op1) (value op2) (value op3) params
     | Add lst ->

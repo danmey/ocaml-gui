@@ -167,7 +167,9 @@ let properties_definition =
       "fh", Float { min = 0.; max = 1.; default = 0.5; step = 0.01 };
       "fg", Float { min = 0.; max = 1.; default = 0.25; step = 0.01 };
       "bg", Float { min = 0.; max = 1.; default = 0.75; step = 0.01 };];
-    "distort",[];
+    "distort",[
+      "dscale", Float { min = 0.1; max = 512.; default = 256.; step = 1. };
+    ];
       "rgb", [
         "rp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
         "gp", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
