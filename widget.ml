@@ -1,7 +1,7 @@
 open Draw
 open GL
 
-type state = Normal | Pressed | Dragged
+type state = Normal | Pressed | Dragged | Selected
 
 (* let center_coord c = float c + 0.5 *)
 (* let center_rect = Rect.lift22 center_coord float *)
@@ -68,7 +68,33 @@ let button_painter state rect =
       in
       glBegin GL_QUADS;
       draw_tex (x,y) (w,h) (tw, th) 4;
-      glEnd ()
+      glEnd ();
+      (match state with
+        | Selected ->
+          print_endline "selected:::";
+          begin
+            let x, y, w, h = Rect.coords rect in
+            let x,y,w,h = 
+              float x,
+              float y,
+              float w,
+              float h
+            in
+            let open BatFloat in
+            glDisable GL_TEXTURE_2D;
+            glEnable GL_BLEND;
+            glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
+            glBegin GL_QUADS;
+            glColor4 ~r:0. ~g:1. ~b:1. ~a:0.5;
+            glVertex3 ~x ~y ~z:0.;
+            glVertex3 ~x:(x + w) ~y ~z:0.;
+            glVertex3 ~x:(x + w) ~y:(y + h) ~z:0.;
+            glVertex3 ~x:x ~y:(y + h) ~z:0.;
+            glEnd ();
+            print_endline "Selected";
+          end
+        | _ -> ())
+        
 
 let bg_painter state rect =
   let x, y, w, h = Rect.coords rect in
@@ -108,6 +134,8 @@ class graphical = object ( self : 'self )
   method invalidate rect = window.Window.pos <- rect
   method revalidate = self # invalidate window.Window.pos
   method paint = bg_painter
+  method set_state new_state = state <- new_state
+  method get_state = state
 end
 
 class interactive = object ( self : 'self )

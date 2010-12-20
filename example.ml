@@ -72,7 +72,11 @@ let texture_generator_view() =
           in
           params
         in
-        let tree = graphical_pane#layout in
+        let start_rect = 
+            BatOption.map (fun (_,b) -> (b # window.pos)) 
+              (BatList.Exceptionless.find (fun (_,b) -> b # get_state == Selected) graphical_pane#widgets) in
+        
+        let tree = graphical_pane#layout start_rect in
         let rec loop = function
           | Tree ((prop, block), lst) ->
             let params = op_of_properties prop in
@@ -104,7 +108,9 @@ let texture_generator_view() =
                          ldy = f "ldy"; }, loop (List.hd lst))
               | "distort" ->
                 let op1::op2::op3::_ = lst in
-                Distort ({dtype=Radial; dscale = f "dscale"}, loop op1, loop op2, loop op3)
+                Distort ({ dtype=Radial; 
+                           dscale = f "dscale"}, 
+                         loop op1, loop op2, loop op3)
               | "rgb" -> Printf.printf "lst::%d\n" (List.length lst); let r::g::b::_ = lst in
                          Rgb ({ rp = f "rp";
                                 gp = f "gp";
@@ -120,7 +126,10 @@ let texture_generator_view() =
                                  scale3 = f "scale3";
                                  base3 = f "base3"; 
                                }, 
-                               loop (List.hd lst)))
+                               loop (List.hd lst))
+          | "modulate" ->
+            Modulate (List.map loop lst))
+              
 
         in
         let op2 = loop tree in

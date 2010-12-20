@@ -51,7 +51,7 @@ let properties
   new properties definition change
     
 (* end and block name = object ( self : 'self ) *)
-class block name click = object ( self : 'self ) 
+class block name click selected = object ( self : 'self ) 
   inherit canvas as canvas
   inherit draggable as super
   val left_border = new draggable_constrained (HorizontalWith 10)
@@ -68,7 +68,6 @@ class block name click = object ( self : 'self )
     window.pos.Rect.y <- grid y
 
   method name = name
-
   (* method paint state = *)
   (*   let caption = Printf.sprintf "%s: %s" name self#value in *)
   (*   caption_painter caption 0 state *)
@@ -90,10 +89,30 @@ class block name click = object ( self : 'self )
            (grid (rect.Rect.w + dx), rect.Rect.h))
 
   method mouse_down b p =
-    if not (click b self) then
+    let res = (if not (click b self) then
       super # mouse_down b p
     else
-      true
+      true) in
+    begin
+      match b with
+        | Event.Right ->
+          begin
+            state <- Selected;
+            selected (self :> draggable);
+          end
+        | _ -> ()
+    end;
+    res
+
+  method mouse_up b p =
+      match b with
+        | Event.Right ->
+          begin
+            match state with
+              | Selected -> true
+              | _ -> super # mouse_down b p
+          end
+        | _ -> super # mouse_down b p
       
   method key = name
   method focus is = focus <- is
@@ -102,8 +121,11 @@ class block name click = object ( self : 'self )
         
 end
 
-let block ?click:(click = fun _ _ -> false) name =
-  new block name click
+let block 
+    ?click:(click = fun _ _ -> false) 
+    ?select:(select = fun _ -> ()) name =
+  new block name click select
+
 open BatFloat
 class texture_preview = object ( self : 'self )
   inherit graphics as super
@@ -186,6 +208,7 @@ let properties_definition =
         "scale3", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
         "base3", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };
       ];
+      "modulate", [];
   ]
     
 type 'a block_tree = Tree of 'a * 'a block_tree list
@@ -207,11 +230,9 @@ class block_canvas generate draw = object ( self : 'self)
         let m = menu ~pos ~items ~select:(fun pos item -> self # select_menu pos item) in
         self # add (m :> draggable);
         true
-      | Event.Middle ->
-        self # layout; true
       | _ -> super # mouse_down button pos
 
-  method layout =
+  method layout start_rect =
     let open BatInt in
     let rects = List.map (fun (_,w) -> w # window.pos) widgets in
     let block_rects = List.map (fun (_,w) -> w # window.pos,w) widgets in
@@ -257,7 +278,13 @@ class block_canvas generate draw = object ( self : 'self)
       (* | a :: [] -> print_endline ("top: " ^ (snd (List.assq a widget_rects))#key) *)
       | [] -> []
     in
-    let lst = stack_loop [[]] (List.hd sorted).Rect.y sorted in
+    let rec loop_beg start_rect = function
+      | x :: xs -> if start_rect = x then x :: xs else loop_beg start_rect xs
+      | [] -> []
+    in
+    let start_rect = match start_rect with | Some a -> a | None -> List.hd sorted in
+    let start_sorted = loop_beg start_rect sorted in
+    let lst = stack_loop [[]] start_rect.Rect.y start_sorted in
     print_endline "stack_loop-----";
     List.iter (fun (lst) -> Printf.printf "(%s)\n" (String.concat " | " (List.map Rect.string_of_rect lst))) lst;
     
@@ -299,7 +326,10 @@ class block_canvas generate draw = object ( self : 'self)
   method create_block item pos =
     let definition = List.assoc item properties_definition in
     let properties = properties definition ~change:(fun _ -> generate self) in
-    let b = block ~click:(fun button block -> self # click_block button block) item in
+    let b = block 
+      ~click:(fun button block -> self # click_block button block)
+      ~select:(fun block -> List.iter (fun (_,w) -> if w != block then w # set_state Normal) widgets)
+      item in
     property_pane # remove_all;
     block_properties <- (b#window, properties)::block_properties;
     self#add (b :> draggable);
@@ -315,14 +345,14 @@ class block_canvas generate draw = object ( self : 'self)
           
   method click_block button block =
     match button with
-      | Event.Right ->
+      | Event.Left ->
         begin
           let properties_pane = List.assq block # window block_properties in
           property_pane # remove_all;
           property_pane # add (properties_pane :> draggable);
           property_pane # revalidate;
           self # focus_block block;
-          true
+          false
         end
       | Event.Middle ->
         begin
@@ -360,7 +390,7 @@ class block_canvas generate draw = object ( self : 'self)
     let process_line line =
       let rec update_parameters properties offset line_rest =
         try
-          Str.search_forward (Str.regexp ":\\([a-z]+\\)[ \t]+\\([.0-9]+\\)[ \t]*") line_rest offset;
+          Str.search_forward (Str.regexp ":\\([a-z0-9]+\\)[ \t]+\\([.0-9]+\\)[ \t]*") line_rest offset;
           let key, value = Str.matched_group 1 line_rest, Str.matched_group 2 line_rest in
           let offset' = Str.match_end () in
           print_endline key;
@@ -369,13 +399,11 @@ class block_canvas generate draw = object ( self : 'self)
           
           ((properties # get key) :> draggable) # set_value value';
           update_parameters properties offset' line_rest
-        with Not_found -> ()
+        with Not_found -> print_endline "First regexp not found!"
       in
-      (* Str.search_forward  *)
-      (*   (Str.regexp  *)
-(*      "(\\([a-z]+\\)[ \t]+(rect \\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\))[ \t]+") line 0; *)
+        try
       Str.search_forward (Str.regexp
-        "(\\([a-z]+\\)[ \t]+(rect[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]*\\(.*\\)") line 0;
+        "(\\([a-z0-9]+\\)[ \t]+(rect[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]+\\([0-9]+\\)[ \t]*\\(.*\\)") line 0;
       let m i = int_of_string (Str.matched_group i line) in
       let name , x, y, w, h = Str.matched_group 1 line, m 2, m 3, m 4, m 5 in
       Printf.printf "(%s %d %d %d %d)" name x y w h;
@@ -385,7 +413,7 @@ class block_canvas generate draw = object ( self : 'self)
       flush stdout;
        let block, properties = self # create_block name (Rect.rect (x,y) (w,h)) in 
        update_parameters properties 0 (Str.matched_group 6 line);
-       ()
+        with Not_found -> print_endline "Second regexp not found!"
     in
       let lines = BatFile.lines_of file_name in
       BatEnum.iter process_line lines

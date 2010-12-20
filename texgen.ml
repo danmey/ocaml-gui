@@ -328,8 +328,8 @@ struct
     ()
 end
 
-let prim op lst (point : (float * float)) =
-  List.fold_left (fun acc f -> op acc (f point)) 0. lst
+let prim op start lst (point : (float * float)) =
+  List.fold_left (fun acc f -> op acc (f point)) start lst
 
 (* let mk_op f a b = *)
 (*   match a,b with *)
@@ -338,10 +338,10 @@ let prim op lst (point : (float * float)) =
 (*     | Val v, RGB (r,g,b) -> RGB (f r v, f g v, f b v) *)
 (*     | RGB (r1,g1,b1), RGB (r2,g2,b2) -> RGB (f r1 r2, f g1 g2, f b1 b2) *)
 
-let mk_op x = x
-let add = prim (mk_op ( +. ))
+let add = prim ( +. ) 0.
 
-let modulate = prim (mk_op ( *. ))
+let modulate = prim ( *. ) 1.
+let modulate3 = prim (fun (r1,b1,g1) (r2,g2,b2) -> r1 *. r2, g1 *. g2, b1 *. b2) (1., 1., 1.)
 
 let to_rad value = value *.  2. *. pi
 
@@ -425,6 +425,7 @@ and value3 op =
         let f x = let Ch3 r = get x point in r in
         (List.fold_left (fun (ar,ag,ab) (r,g,b) ->
           ar+.r, ag+.g, ab+.b) (0.,0.,0.) (List.map f lst))
+    | Modulate lst -> modulate3 (List.map value3 lst)
     | Phi3 ({ scale1;
               base1;
               scale2;
@@ -435,7 +436,7 @@ and value3 op =
         let r,g,b = value3 op p in
         scale1 *. (r +. base1),
         scale2 *. (g +. base2),
-        scale2 *. (b +. base3))
+        scale3 *. (b +. base3))
     
 and channel3_value op p = Ch3 (value3 op p) 
 and get op =
@@ -445,6 +446,7 @@ and get_arity = function
   | Rgb _ -> 3
   | Hsv _ -> 3
   | Phi3 _ -> 3
+  | Modulate _ -> 3
   | Add lst -> let a::_ = lst in get_arity a
   | Distort (_,_,_,dst) -> get_arity dst
   | op -> 1
