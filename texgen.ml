@@ -4,7 +4,8 @@ let texsize = 256
 
 type cloud_params = 
     { persistence : float; 
-      octaves : int }
+      octaves : int;
+      seed: int}
 
 type transform_params = 
     { ox : float; 
@@ -102,6 +103,7 @@ type operator =
   | Blur of blur_params
   | Phi of phi_params * operator
   | Phi3 of phi3_params * operator
+  | Custom of operator
 
 
 
@@ -137,21 +139,31 @@ end
 
 let pi = BatFloat.pi
 let pi2 = 2. *. BatFloat.pi 
-
-let noise = 
-  Random.init 3;
+let noise seed =
+  Random.init seed;
+  let state = ref (Random.get_state()) in
   Memo.make 
-    (fun (x, y) -> 
-      (Random.float 1.0) *. pi2)     
+    (fun (_, _) -> 
+      Random.set_state !state;
+      let res = (Random.float 1.0) *. pi2 in
+      state := Random.get_state ();
+      res)
 
 let lift f gen (x, y) = f (gen (x, y))
 
-let gradient_u = Memo.make (lift (fun x -> (sin x +. 1.0) *. 0.5) noise)
 
-let gradient_v = Memo.make (lift (fun x -> (cos x +. 1.0) *. 0.5) noise)
-
-let gradient_u = Memo.make (lift (fun x -> (sin x)) noise)
-let gradient_v = Memo.make (lift (fun x -> (cos x)) noise)
+let gradient_u = 
+  let arr = Array.make 10 (fun _ -> 0.) in
+  for i = 0 to Array.length arr-1; do
+    arr.(i) <- Memo.make (lift (fun x -> (sin x)) (noise i))
+  done;
+  arr
+let gradient_v = 
+  let arr = Array.make 10 (fun _ -> 0.) in
+  for i = 0 to Array.length arr-1; do
+    arr.(i) <- Memo.make (lift (fun x -> (cos x)) (noise i))
+  done;
+  arr
 
 let colorize color_lst layer =
   let interp a b f = (b-.a) *. f +. a in
@@ -165,7 +177,7 @@ let colorize color_lst layer =
     let v2,c2 = List.hd l2 in
     interpolate c1 c2 v1 v2 value
     
-let cloud w h =
+let cloud seed w h =
   let open BatInt in
   fun (x,y) ->
     let m x w = 
@@ -173,7 +185,7 @@ let cloud w h =
       v *. w in
     let gx = m x w in
     let gy = m y h in
-    let grad_uv xg yg = gradient_u (xg, yg), gradient_v (xg, yg) in
+    let grad_uv xg yg = gradient_u.(seed) (xg, yg), gradient_v.(seed) (xg, yg) in
     let gx1, gy1 = grad_uv  gx     gy in
     let gx2, gy2 = grad_uv (gx+.w)  gy in
     let gx3, gy3 = grad_uv  gx     (gy+.h) in
@@ -196,21 +208,39 @@ let cloud w h =
     in
     inter2d s t u v xf yf
 
-let clouds { octaves; persistence } =
+let clouds { seed; octaves; persistence } =
   let rec gen_list lst a = 
     if a > 0 then 
       gen_list (((List.hd lst) *. 2.) :: lst) (a-1) 
     else lst 
   in
   let clouds_a = gen_list [8./.256.] (octaves - 1) in
-  let clouds = List.map (fun a -> cloud a a) clouds_a in
+  let clouds = List.map (fun a -> cloud seed a a) clouds_a in
   fun (x, y) -> 
     let v,_,d = ((List.fold_left 
            (fun (acc,p,d) cl -> 
+             let cl (x,y) =
+             let x, y = fst (modf x), fst (modf y) in
+             let l = cl in
+             (x *. y *. cl (1.0-.x,1.-.y) +. (1.0 -. x) *. y          *. l (x,1.-.y) +.
+                (                     (1.0 -. x) *. (1.0 -. y) *. l (x,y)) +.
+                (                     (       x) *. (1.0 -. y) *. l (1.0-. x,y)))
+             in
              acc +. p *. 0.65 +.  p *. (cl (x, y)), p *. persistence, d+.p*.1.35))
            (0.0, persistence,0.) clouds) in
     v/.d
       
+(* let wrap l = fun (x, y) -> *)
+(*   let x, y = fst (modf x), fst (modf y) in *)
+(*   (x *. y *. l (x,y) +. (1.0 -. x) *. y          *. l (1.0-.x,y) +. *)
+(*   (                     (1.0 -. x) *. (1.0 -. y) *. l (1.0-.x,1.0-.y)) +. *)
+(*   (                     (       x) *. (1.0 -. y) *. l (     x,1.0-.y))) *)
+   
+
+
+(* let clouds p = wrap (clouds p) *)
+  
+
       
 let wrap c = c land (texsize - 1)
 
@@ -446,7 +476,7 @@ and get_arity = function
   | Rgb _ -> 3
   | Hsv _ -> 3
   | Phi3 _ -> 3
-  | Modulate _ -> 3
+  | Modulate lst -> let a::_ = lst in get_arity a
   | Add lst -> let a::_ = lst in get_arity a
   | Distort (_,_,_,dst) -> get_arity dst
   | op -> 1
@@ -460,9 +490,9 @@ let layer2 op x y =
   (v,v,v)
 
 
-let tree =
-  Clamp (Phi ({base = 0.15; scale = 1.6},
-       (Clouds { octaves = 4; persistence = 0.5; })));;
+(* let tree = *)
+(*   Clamp (Phi ({base = 0.15; scale = 1.6}, *)
+(*        (Clouds { octaves = 4; persistence = 0.5; })));; *)
 
 module A = Bigarray.Genarray;;
 
@@ -503,6 +533,38 @@ let update_texture () =
 );
   ) !operator)
 
+let save_texture file_name =
+  let image_width = 256 in
+  let image_height = 256 in
+  let fptr = open_out_bin file_name in
+  let putc (b, ch) = output_byte ch b in
+  putc(0,fptr);
+  putc(0,fptr);
+  putc(2,fptr);
+  putc(0,fptr); putc(0,fptr);
+  putc(0,fptr); putc(0,fptr);
+  putc(0,fptr);
+  putc(0,fptr); putc(0,fptr);
+  putc(0,fptr); putc(0,fptr);
+  putc(image_width land 0x00FF,fptr);
+  putc((image_width land 0xFF00) / 256,fptr);
+  putc((image_height land 0x00FF),fptr);
+  putc((image_height land 0xFF00) / 256,fptr);
+  putc(32,fptr);
+   putc(0,fptr);
+   for y = 0 to image_height-1 do
+   for x = 0 to image_width-1 do
+     let r = A.get ar [|y;x;0|] in
+     let g = A.get ar [|y;x;1|] in
+     let b = A.get ar [|y;x;2|] in
+     let a = A.get ar [|y;x;3|] in
+     putc(r,fptr);
+     putc(g,fptr);
+     putc(b,fptr);
+     putc(a,fptr)
+   done
+     done
+
 let reset () =
   current_line := 0;
   working := true
@@ -512,18 +574,18 @@ let reset () =
 
 (* TGA.write "test.tga" 256 (layer tree) *)
 
-let op =     
-  Add [Glow { x0 = 0.0;
-    y0 = 0.0;
-    atten = 1.0;
-    xr = 1.0;
-    yr = 1.0; };
-    Glow { x0 = 0.0;
-           y0 = 0.0;
-           atten = 1.0;
-           xr = 1.0;
-           yr = 1.0; }]
-;;
+(* let op =      *)
+(*   Add [Glow { x0 = 0.0; *)
+(*     y0 = 0.0; *)
+(*     atten = 1.0; *)
+(*     xr = 1.0; *)
+(*     yr = 1.0; }; *)
+(*     Glow { x0 = 0.0; *)
+(*            y0 = 0.0; *)
+(*            atten = 1.0; *)
+(*            xr = 1.0; *)
+(*            yr = 1.0; }] *)
+(* ;; *)
 
-let op = tree;;
+(* let op = tree;; *)
 (* TGA.write "test.tga" 256 (layer op) *)

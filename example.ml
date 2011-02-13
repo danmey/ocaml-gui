@@ -75,7 +75,19 @@ let texture_generator_view() =
         let start_rect = 
             BatOption.map (fun (_,b) -> (b # window.pos)) 
               (BatList.Exceptionless.find (fun (_,b) -> b # get_state == Selected) graphical_pane#widgets) in
-        
+        let rec find_all_macros = function
+          | (_,w) :: xs -> 
+            if Pervasives.(w # key = "MACRO") then
+              let rect = w # window.pos in
+              let tree = graphical_pane#layout (Some rect) in
+              (match tree with
+                | Tree ((prop, block), lst) ->
+                  let params = op_of_properties prop in
+                  let i name = let Event.Int v = List.assoc name params in v in
+                  i "id", List.hd lst) :: find_all_macros xs
+                else find_all_macros xs
+          | [] -> [] in
+        let macros = find_all_macros graphical_pane#widgets in
         let tree = graphical_pane#layout start_rect in
         let rec loop = function
           | Tree ((prop, block), lst) ->
@@ -85,7 +97,8 @@ let texture_generator_view() =
             (match block # key with
               | "perlin" ->
                 Clouds { octaves = i "octaves";
-                         persistence = f "persistence"}
+                         persistence = f "persistence";
+                         seed = i "seed" }
               | "glow" -> Glow { x0 = f "x0";
                                  y0 = f "y0";
                                  atten = f "atten";
@@ -127,8 +140,10 @@ let texture_generator_view() =
                                  base3 = f "base3"; 
                                }, 
                                loop (List.hd lst))
-          | "modulate" ->
-            Modulate (List.map loop lst))
+              | "MACRO" -> loop (List.hd lst)
+              | "CALL" -> loop (List.assoc (i "id") macros)
+              | "modulate" ->
+                Modulate (List.map loop lst))
               
 
         in
@@ -154,7 +169,9 @@ let texture_generator_view() =
       let main_frame = new frame (Layout.vertical_fixed ~sizes:[25]) in
       main_frame#add ((menu_bar 
                          [Entry ("Save", 
-                                 (fun () -> graphical_pane # write !project_name));
+                                 (fun () -> graphical_pane # write !project_name;
+                                  save_texture (!project_name ^ ".tga");
+                          ));
                           Entry ("Open",
                                  (fun () -> graphical_pane # read !project_name));
                          ]) :> draggable);

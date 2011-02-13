@@ -37,6 +37,7 @@ module Tga = struct
 let image_width = 256
 and image_height = 256
 
+
 (* let make_image arr = *)
 
 (*   let image = *)

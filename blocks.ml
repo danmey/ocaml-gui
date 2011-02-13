@@ -162,7 +162,9 @@ let property_pane = new frame Layout.fill
 let properties_definition = 
   ["perlin",[
     "persistence", Float { min = 0.; max = 3.; default = 0.25; step = 0.01 };
-    "octaves", Int { min=1; max=8; default=1; step = 0.2 }; ];
+    "octaves", Int { min=1; max=8; default=1; step = 0.2 }; 
+    "seed", Int { min=0; max=9; default=1; step=0.2};
+   ];
    "add",[
    ];
    "light", [
@@ -208,6 +210,8 @@ let properties_definition =
         "scale3", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
         "base3", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };
       ];
+      "MACRO",["id", Int { min = 0; max = 10; default = 0; step = 0.01 }];
+      "CALL", ["id", Int { min = 0; max = 10; default = 0; step = 0.01 }];
       "modulate", [];
   ]
     
