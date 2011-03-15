@@ -126,6 +126,7 @@ let texture_generator_view() =
                          loop op1, loop op2, loop op3)
               | "rgb" -> Printf.printf "lst::%d\n" (List.length lst); let r::g::b::_ = lst in
                          Rgb ({ rp = f "rp";
+
                                 gp = f "gp";
                                 bp = f "bp";}, loop r, loop g, loop b)
               | "hsv" -> let r::g::b::_ = lst in
@@ -143,7 +144,9 @@ let texture_generator_view() =
               | "MACRO" -> loop (List.hd lst)
               | "CALL" -> loop (List.assoc (i "id") macros)
               | "modulate" ->
-                Modulate (List.map loop lst))
+                Modulate (List.map loop lst)
+              | "invert" ->
+                Invert (loop (List.hd lst)))
               
 
         in

@@ -103,9 +103,8 @@ type operator =
   | Blur of blur_params
   | Phi of phi_params * operator
   | Phi3 of phi3_params * operator
+  | Invert of operator
   | Custom of operator
-
-
 
 module Layer = struct
   let make f = f
@@ -135,8 +134,6 @@ module Memo = struct
       get_pixel layer f
 end
 
-
-
 let pi = BatFloat.pi
 let pi2 = 2. *. BatFloat.pi 
 let noise seed =
@@ -151,13 +148,13 @@ let noise seed =
 
 let lift f gen (x, y) = f (gen (x, y))
 
-
 let gradient_u = 
   let arr = Array.make 10 (fun _ -> 0.) in
   for i = 0 to Array.length arr-1; do
     arr.(i) <- Memo.make (lift (fun x -> (sin x)) (noise i))
   done;
   arr
+
 let gradient_v = 
   let arr = Array.make 10 (fun _ -> 0.) in
   for i = 0 to Array.length arr-1; do
@@ -222,9 +219,10 @@ let clouds { seed; octaves; persistence } =
              let cl (x,y) =
              let x, y = fst (modf x), fst (modf y) in
              let l = cl in
-             (x *. y *. cl (1.0-.x,1.-.y) +. (1.0 -. x) *. y          *. l (x,1.-.y) +.
-                (                     (1.0 -. x) *. (1.0 -. y) *. l (x,y)) +.
-                (                     (       x) *. (1.0 -. y) *. l (1.0-. x,y)))
+             (* (x *. y *. cl (1.0-.x,1.-.y) +. (1.0 -. x) *. y          *. l (x,1.-.y) +. *)
+             (*    (                     (1.0 -. x) *. (1.0 -. y) *. l (x,y)) +. *)
+             (*    (                     (       x) *. (1.0 -. y) *. l (1.0-. x,y))); *)
+             l (x,y)
              in
              acc +. p *. 0.65 +.  p *. (cl (x, y)), p *. persistence, d+.p*.1.35))
            (0.0, persistence,0.) clouds) in
@@ -240,8 +238,6 @@ let clouds { seed; octaves; persistence } =
 
 (* let clouds p = wrap (clouds p) *)
   
-
-      
 let wrap c = c land (texsize - 1)
 
 let transform f l1 l2 =
@@ -316,7 +312,6 @@ let array_of_texture layer =
 let compose3 l1 l2 l3 = (fun u v -> l1 u v, l2 u v, l3 u v)
 (* let pixels treshold =  (fun u v -> if Random.float 1.0 < treshold then 1.0 else 0.0) *)
 (* let force l = for u = 0 to (texsize-1) do for v = 0 to (texsize-1) do ignore(l u v) done done; l *)
-
 
 let gray3 l = Layer.make (fun u v -> let p = l u v in (p,p,p))
 
@@ -434,7 +429,8 @@ let rec value op =
         let v' = sqrt ((x-.x0)*.(x-.x0)*.xr +. (y-.y0)*.(y-.y0)*.yr) in
         let v = BatFloat.pow v' atten in
         v
-      | Phi ({ base; scale; }, op) -> fun (x, y) -> scale *. (value op (x,y) +. base))
+      | Phi ({ base; scale; }, op) -> fun (x, y) -> scale *. (value op (x,y) +. base)
+      | Invert op -> fun p -> 1.0 -. value op p)
                 
 and channel_value op p = Ch (value op p)
 and lift_lst lst = BatList.map value lst
@@ -467,6 +463,7 @@ and value3 op =
         scale1 *. (r +. base1),
         scale2 *. (g +. base2),
         scale3 *. (b +. base3))
+
     
 and channel3_value op p = Ch3 (value3 op p) 
 and get op =
@@ -488,7 +485,6 @@ let layer op x y =
 let layer2 op x y = 
   let v = value op ((float y), (float x)) in
   (v,v,v)
-
 
 (* let tree = *)
 (*   Clamp (Phi ({base = 0.15; scale = 1.6}, *)

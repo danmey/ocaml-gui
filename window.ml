@@ -1,14 +1,13 @@
 open GL
 open Draw
+open Rect
+open BatFloat
 
 type window = {
   mutable pos : Rect.t;
   mutable children : window list;
   mutable painter : Rect.t -> unit;
 }
-
-open Rect
-open BatFloat
 
 
 let default_painter _ = ()
@@ -30,13 +29,13 @@ let with_scisor rect f =
       let coords { Rect.x; y; w; h; } =
         (x, screen_height-y-h, w, h)
       in
-    glMatrixMode GL_MODELVIEW;
-    glLoadIdentity ();
-    let x, y, width, height = coords rect in
-    glScissor ~x ~y ~width ~height;
-    glEnable GL_SCISSOR_TEST;
-    f ();
-    glDisable GL_SCISSOR_TEST
+      glMatrixMode GL_MODELVIEW;
+      glLoadIdentity ();
+      let x, y, width, height = coords rect in
+      glScissor ~x ~y ~width ~height;
+      glEnable GL_SCISSOR_TEST;
+      f ();
+      glDisable GL_SCISSOR_TEST
 
 let desktop_rect () = Rect.rect (0,0) (Display.display_size ())
 
@@ -86,9 +85,6 @@ let find_window position =
   in
   List.rev (loop (Rect.rect (0,0) (0,0)) desktop)
       
-
-  
-
 let add parent window =
   parent.children <-  parent.children @ [window];
   ()

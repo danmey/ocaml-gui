@@ -181,7 +181,7 @@ let properties_definition =
      "yr", Float { min = 0.; max = 5.; default = 0.5; step = 0.01 };
    ];
   "phi",[
-    "scale", Float { min = 0.; max = 10.; default = 1.; step = 0.01 };
+    "scale", Float { min = -10.; max = 10.; default = 1.; step = 0.01 };
      "base", Float { min = -5.; max = 5.; default = 0.; step = 0.01 };];
     "add", [];
     "flat",[
@@ -213,6 +213,7 @@ let properties_definition =
       "MACRO",["id", Int { min = 0; max = 10; default = 0; step = 0.01 }];
       "CALL", ["id", Int { min = 0; max = 10; default = 0; step = 0.01 }];
       "modulate", [];
+      "invert", [];
   ]
     
 type 'a block_tree = Tree of 'a * 'a block_tree list
