@@ -85,6 +85,7 @@ let init build reshape =
   Glut.glutIdleFunc Glut.glutPostRedisplay;
   Glut.glutMotionFunc on_mouse_motion;
   Glut.glutMouseFunc on_mouse;
+  Glut.glutKeyboardFunc Event.keyboard_handler;
   Glut.glutReshapeFunc reshape;
   Glut.glutPositionWindow ~x:0 ~y:0;
   let width, height = Display.screen_width, Display.screen_height in

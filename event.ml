@@ -18,6 +18,7 @@ type event =
   | ValueChanged
   | Parameters of (string * value) list
   | Drag of Pos.t
+  | KeyDown of char * Pos.t
 
 type signal = { callback : (Window.window -> event -> bool); }
 
@@ -40,9 +41,11 @@ let pre_process_event window =
 
 let focused_window = ref None
 
+(* This got a bit complicated *)
 let run_events from_window event =
   match event with
-    | MouseDown (b, p) ->
+    | MouseDown (_, p)
+    | KeyDown (_, p) ->
         (* let windows = List.rev windows in  *)
         let rec event_loop = function
           | window :: rest_windows -> 
@@ -66,7 +69,11 @@ let run_events from_window event =
         (fun (window, from_window, callback) ->
           ignore(callback from_window (pre_process_event window event)))
         !focused_window
-    | event -> List.iter (fun (window, { callback }) -> ignore(callback from_window (pre_process_event window event))) !signals
+    | event -> List.iter 
+      (fun (window, { callback }) -> 
+        ignore
+          (callback from_window 
+             (pre_process_event window event))) !signals
 
 let mouse_handler ~button ~state ~x ~y = 
   let b = match button with
@@ -76,8 +83,13 @@ let mouse_handler ~button ~state ~x ~y =
     | _ -> Middle
   in
   run_events Window.desktop
-  (match state with
-    | Glut.GLUT_DOWN -> MouseDown (b, (x, y))
-    | Glut.GLUT_UP -> MouseUp (b, (x, y)))
+    (match state with
+      | Glut.GLUT_DOWN -> MouseDown (b, (x, y))
+      | Glut.GLUT_UP -> MouseUp (b, (x, y)))
 
-let mouse_motion_handler ~x ~y = run_events Window.desktop (MouseMotion (Left, (x,y)))
+let keyboard_handler ~key ~x ~y =
+  run_events Window.desktop (KeyDown (key, (x,y)))
+  
+
+let mouse_motion_handler ~x ~y = 
+  run_events Window.desktop (MouseMotion (Left, (x,y)))
