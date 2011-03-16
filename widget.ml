@@ -637,8 +637,16 @@ let menu_bar definition =
   let entry_size = function Entry (name, _ ) -> text_width name + 5 in
   let sizes = List.map entry_size definition in
   new menu_bar definition sizes
-    
 
+class edit_area =    
+object ( self : 'self )
+  inherit fixed as super
+  val mutable caption = ""
+  method paint state = caption_painter2 caption state
+  method event wind = function
+    | Event.KeyDown (char, point) -> caption <- caption ^ BatString.of_char char; true
+    | _ -> false
+end
     
 (* class content_pane = object (self : 'self) *)
 

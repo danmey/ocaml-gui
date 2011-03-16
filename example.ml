@@ -179,6 +179,7 @@ let texture_generator_view() =
                                  (fun () -> graphical_pane # read !project_name));
                          ]) :> draggable);
       main_frame#add (main_view :> draggable);
+      main_frame#add ((new edit_area) :> draggable);
       graphical_pane # read !project_name;
       main_frame
 
