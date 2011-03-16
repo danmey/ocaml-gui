@@ -672,46 +672,65 @@ object ( self : 'self )
   method event wind = function
     | Event.KeyPress (char, point) ->
       let code = int_of_char char in
-      (match code with 
-        | 13 -> lines <- "" :: lines; cursor_col <- 0
-        | _ -> 
-          if code >= 32 && code <= 127 then
-            begin
-              lines <- (match lines with
-                | last :: rest -> 
-                  (if code == 127 then
-                      let str = List.hd lines in
-                      (String.sub str 0 cursor_col)
-                      ^ (String.sub str (cursor_col+1) (String.length str - cursor_col - 1))
-                   else 
-                      (if cursor_col == String.length last then
-                      begin
-                        cursor_col <- cursor_col + 1;
-                        (last ^ BatString.of_char char)
-                      end
+      if self # keypress code then
+        (match code with 
+          | 13 -> lines <- "" :: lines; cursor_col <- 0
+          | _ -> 
+            if code >= 32 && code <= 127 then
+              begin
+                lines <- (match lines with
+                  | last :: rest -> 
+                    (if code == 127 then
+                        let str = List.hd lines in
+                        (String.sub str 0 cursor_col)
+                        ^ (String.sub str (cursor_col+1) (String.length str - cursor_col - 1))
                      else 
-                       let str = List.hd lines in
-                       let cc = cursor_col in
-                       cursor_col <- cursor_col + 1;
-                       (String.sub str 0 cc) ^
-                         BatString.of_char char ^ (String.sub str cc (String.length str - cc))
-                  )) :: rest;
-                | lst -> lst);
-            end);
+                        (if cursor_col == String.length last then
+                            begin
+                              cursor_col <- cursor_col + 1;
+                              (last ^ BatString.of_char char)
+                            end
+                         else 
+                            let str = List.hd lines in
+                            let cc = cursor_col in
+                            cursor_col <- cursor_col + 1;
+                            (String.sub str 0 cc) ^
+                              BatString.of_char char ^ (String.sub str cc (String.length str - cc))
+                        )) :: rest;
+                  | lst -> lst);
+              end);
       true
     | Event.SpecialKey (code, point) ->
       begin
-        match code with
-          | Glut.GLUT_KEY_RIGHT -> 
-            begin
-              if cursor_col < String.length (List.hd lines) 
-              then cursor_col <- cursor_col + 1
-            end
-          | Glut.GLUT_KEY_LEFT -> begin if cursor_col > 0 then cursor_col <- cursor_col - 1 end
-      end; true
+        if self # special_key code then
+          match code with
+            | Glut.GLUT_KEY_RIGHT -> 
+              begin
+                if cursor_col < String.length (List.hd lines) 
+                then cursor_col <- cursor_col + 1
+              end
+            | Glut.GLUT_KEY_LEFT -> begin if cursor_col > 0 then cursor_col <- cursor_col - 1 end
+      end; 
+      true
     | _ -> false
+  method special_key _ = true
+  method keypress _ = true
 end
+(* class completion_box completion_func = *)
+(* object ( self : 'self ) *)
+(*   inherit edit_area as super *)
+(*   method special_key _ = true *)
+(*   method keypress _ =  *)
+(*     let str = List.hd lines in *)
+(*     match code with *)
+(*       | 13 -> completion_func str *)
     
+(* end *)
+
+let completion_box ?completion_func:(completion_func=(fun str -> [str])) () =
+  ((new completion_box completion_func) :> draggable)
+      
+
 (* class content_pane = object (self : 'self) *)
 
 (* let ref_pane content:= *)
