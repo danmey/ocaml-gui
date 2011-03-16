@@ -391,6 +391,13 @@ let caption_painter2 text state rect =
    draw_text (int_of_float ofs_x) (int_of_float ofs_y) text;
    ()
 
+let text_area_painter line text state rect =
+  let open BatInt in
+      let x, y, w, h = Rect.coords rect in
+      glColor3 ~r:(200./.256.) ~g:(180./.256.) ~b:(180./.256.);
+      draw_text x (y+line * 10) text;
+      ()
+
 class button name click = 
 object ( self : 'self )
   inherit fixed as super
@@ -642,7 +649,7 @@ class edit_area =
 object ( self : 'self )
   inherit fixed as super
   val mutable caption = ""
-  method paint state = caption_painter2 caption state
+  method paint state = text_area_painter 0 caption state
   method event wind = function
     | Event.KeyDown (char, point) -> caption <- caption ^ BatString.of_char char; true
     | _ -> false
