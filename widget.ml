@@ -645,25 +645,32 @@ let menu_bar definition =
   let sizes = List.map entry_size definition in
   new menu_bar definition sizes
 
+
 open BatStd
 class edit_area =    
 object ( self : 'self )
   inherit fixed as super
   val mutable lines = [""]
-
+  val mutable cursor_col = 0
+  val mutable cursor_line = 0
   method paint state rect =
     BatList.iteri 
       (fun line text -> 
-        text_area_painter line text state rect) <| List.rev lines
+        text_area_painter line text state rect) <| List.rev lines;
+    let tw = text_width (String.sub (List.hd lines) 0 cursor_col) in
+    let rect = Rect.rect (rect.Rect.x + tw, rect.Rect.y) (4,10) in
+    text_area_painter (List.length lines - 1) "I" 0 rect; 
+    ()
 
   method event wind = function
     | Event.KeyPress (char, point) ->
-      (match char with | '\r' -> lines <- "" :: lines 
+      (match char with | '\r' -> lines <- "" :: lines; cursor_col <- 0
         | _ ->
           begin
             lines <- (match lines with
               | last :: rest -> (last ^ BatString.of_char char) :: rest
-              | lst -> lst)
+              | lst -> lst);
+            cursor_col <- cursor_col + 1
           end);
       true
     | _ -> false
