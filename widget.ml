@@ -651,7 +651,7 @@ object ( self : 'self )
   val mutable caption = ""
   method paint state = text_area_painter 0 caption state
   method event wind = function
-    | Event.KeyDown (char, point) -> caption <- caption ^ BatString.of_char char; true
+    | Event.KeyPress (char, point) -> caption <- caption ^ BatString.of_char char; true
     | _ -> false
 end
     
