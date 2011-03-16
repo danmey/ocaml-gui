@@ -657,22 +657,58 @@ object ( self : 'self )
     BatList.iteri 
       (fun line text -> 
         text_area_painter line text state rect) <| List.rev lines;
-    let tw = text_width (String.sub (List.hd lines) 0 cursor_col) in
-    let rect = Rect.rect (rect.Rect.x + tw, rect.Rect.y) (4,10) in
+    let str = List.hd lines in
+    let pos = 
+      if cursor_col = 0 then 0 
+      else
+        let tw = text_width (String.sub str 0 cursor_col) in
+        let tw' = 0 in
+        (* let tw = text_width (String.sub str (cursor_col-1) 1) in *)
+        tw + tw' in
+    let rect = Rect.rect (rect.Rect.x + pos-4, rect.Rect.y) (4,10) in
     text_area_painter (List.length lines - 1) "I" 0 rect; 
     ()
 
   method event wind = function
     | Event.KeyPress (char, point) ->
-      (match char with | '\r' -> lines <- "" :: lines; cursor_col <- 0
-        | _ ->
-          begin
-            lines <- (match lines with
-              | last :: rest -> (last ^ BatString.of_char char) :: rest
-              | lst -> lst);
-            cursor_col <- cursor_col + 1
-          end);
+      let code = int_of_char char in
+      (match code with 
+        | 13 -> lines <- "" :: lines; cursor_col <- 0
+        | _ -> 
+          if code >= 32 && code <= 127 then
+            begin
+              lines <- (match lines with
+                | last :: rest -> 
+                  (if code == 127 then
+                      let str = List.hd lines in
+                      (String.sub str 0 cursor_col)
+                      ^ (String.sub str (cursor_col+1) (String.length str - cursor_col - 1))
+                   else 
+                      (if cursor_col == String.length last then
+                      begin
+                        cursor_col <- cursor_col + 1;
+                        (last ^ BatString.of_char char)
+                      end
+                     else 
+                       let str = List.hd lines in
+                       let cc = cursor_col in
+                       cursor_col <- cursor_col + 1;
+                       (String.sub str 0 cc) ^
+                         BatString.of_char char ^ (String.sub str cc (String.length str - cc))
+                  )) :: rest;
+                | lst -> lst);
+            end);
       true
+    | Event.SpecialKey (code, point) ->
+      begin
+        match code with
+          | Glut.GLUT_KEY_RIGHT -> 
+            begin
+              if cursor_col < String.length (List.hd lines) 
+              then cursor_col <- cursor_col + 1
+            end
+          | Glut.GLUT_KEY_LEFT -> begin if cursor_col > 0 then cursor_col <- cursor_col - 1 end
+      end; true
     | _ -> false
 end
     
