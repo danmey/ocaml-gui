@@ -19,6 +19,7 @@ type event =
   | Parameters of (string * value) list
   | Drag of Pos.t
   | KeyPress of char * Pos.t
+  | SpecialKey of int * Pos.t
 
 type signal = { callback : (Window.window -> event -> bool); }
 
