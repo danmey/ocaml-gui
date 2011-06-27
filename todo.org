@@ -1,0 +1,5 @@
+* TODO Update texture after releasing slider
+* TODO Generic parameters of controls
+* TODO Slider range
+* TODO `Threading'
+* TODO 

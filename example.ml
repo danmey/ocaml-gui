@@ -55,7 +55,7 @@ open BatFloat
 (*       () *)
 (* end *)
 
-let project_name = ref "canvas.txt"
+let project_name = ref (Sys.argv.(1))
 
 open Blocks
 
@@ -179,8 +179,10 @@ let texture_generator_view() =
                                  (fun () -> graphical_pane # read !project_name));
                          ]) :> draggable);
       main_frame#add (main_view :> draggable);
-      main_frame#add (completion_box ());
-      graphical_pane # read !project_name;
+      (* main_frame#add (completion_box ()); *)
+      (try
+        graphical_pane # read !project_name
+      with Sys_error _ -> ());
       main_frame
 
 

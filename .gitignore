@@ -6,4 +6,4 @@ _junk
 *.d.native
 *.p.byte
 *.annot
-/c.tga
+*.tga

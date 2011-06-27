@@ -416,6 +416,7 @@ end
 
 let label ~name ~click = new label name
 
+
 open BatInt
 
 class slider name left right step default (change : slider -> unit)
@@ -716,16 +717,15 @@ object ( self : 'self )
   method special_key _ = true
   method keypress _ = true
 end
-(* class completion_box completion_func = *)
-(* object ( self : 'self ) *)
-(*   inherit edit_area as super *)
-(*   method special_key _ = true *)
-(*   method keypress _ =  *)
-(*     let str = List.hd lines in *)
-(*     match code with *)
-(*       | 13 -> completion_func str *)
-    
-(* end *)
+class completion_box completion_func =
+object ( self : 'self )
+  inherit edit_area as super
+  (* method special_key _ = true *)
+  (* method keypress _ = *)
+  (*   let str = List.hd lines in *)
+  (*   match code with *)
+  (*     | 13 -> completion_func str *)
+end
 
 let completion_box ?completion_func:(completion_func=(fun str -> [str])) () =
   ((new completion_box completion_func) :> draggable)
