@@ -13,7 +13,7 @@ let button_painter state rect =
   let x, y, w, h = Rect.coords rect in
   let quad (x, y) (w, h) (xt,yt) (wt, ht) =
     let open BatFloat in
-    let x,y,w,h = 
+    let x,y,w,h =
       float x,
       float y,
       float w,
@@ -30,9 +30,9 @@ let button_painter state rect =
     glVertex3 ~x:x ~y:(y + h) ~z:0.
   in
   let open BatInt in
-      let texid = Resource.get (match state with 
+      let texid = Resource.get (match state with
         | Normal  -> "button-normal"
-        | Dragged -> "button-push" 
+        | Dragged -> "button-push"
         | _       -> "button-normal")
       in
 
@@ -40,23 +40,23 @@ let button_painter state rect =
       glEnable GL_BLEND;
       glBlendFunc Sfactor.GL_SRC_ALPHA Dfactor.GL_ONE_MINUS_SRC_ALPHA;
 
-      glBindTexture 
-        ~target:BindTex.GL_TEXTURE_2D 
+      glBindTexture
+        ~target:BindTex.GL_TEXTURE_2D
         ~texture:texid;
-      glTexParameter 
-        ~target:TexParam.GL_TEXTURE_2D 
+      glTexParameter
+        ~target:TexParam.GL_TEXTURE_2D
         ~param:(TexParam.GL_TEXTURE_MAG_FILTER Mag.GL_LINEAR);
-      glTexParameter 
-        ~target:TexParam.GL_TEXTURE_2D 
+      glTexParameter
+        ~target:TexParam.GL_TEXTURE_2D
         ~param:(TexParam.GL_TEXTURE_MIN_FILTER Min.GL_LINEAR);
 
-      let draw_tex (x,y) (w,h) (tw,th)  b = 
+      let draw_tex (x,y) (w,h) (tw,th)  b =
         let b2 = b * 2 in
         quad (x+b, y)     (w-b2, b) (b, 0) (tw-b2, b);
         quad (x+b, y+h-b) (w-b2, b) (b, th-b) (tw-b2, b);
         quad (x, y+b)     (b, h-b2) (0, b) (b, th-b2);
         quad (x + w-b, y+b) (b, h-b2) (tw-b, b) (0, th-b2);
-        
+
               (* Corners *)
         quad (x, y) (b, b) (0, 0) (b, b);
         quad (x+w-b, y) (b, b) (tw-b, 0) (b, b);
@@ -74,7 +74,7 @@ let button_painter state rect =
           print_endline "selected:::";
           begin
             let x, y, w, h = Rect.coords rect in
-            let x,y,w,h = 
+            let x,y,w,h =
               float x,
               float y,
               float w,
@@ -94,13 +94,13 @@ let button_painter state rect =
             print_endline "Selected";
           end
         | _ -> ())
-        
+
 
 let bg_painter state rect =
   let x, y, w, h = Rect.coords rect in
   let quad (x, y) (w, h)  =
     let open BatFloat in
-    let x,y,w,h = 
+    let x,y,w,h =
       float x,
       float y,
       float w,
@@ -152,7 +152,7 @@ class interactive = object ( self : 'self )
 
   method event wind = function
     | Event.MouseDown (b,point) -> self#mouse_down b point
-    | Event.MouseUp (b, point) -> self#mouse_up b point 
+    | Event.MouseUp (b, point) -> self#mouse_up b point
     | Event.MouseMotion (b, point) -> self#mouse_motion b point
     | _ -> false
 end
@@ -161,8 +161,8 @@ class virtual [ 'a ] composite = object ( self : 'self )
   inherit widget as super
   val mutable widgets : (Window.window * 'a) list = []
 
-  method add (widget : 'a) = 
-    Window.add self#window (widget#window); 
+  method add (widget : 'a) =
+    Window.add self#window (widget#window);
     widgets <- widgets @ [widget#window, widget]
 
   method remove widget =
@@ -182,10 +182,10 @@ end
 class [ 'a ] generic_canvas = object ( self : 'self )
   inherit [ 'a ] composite as composite
   inherit graphical as super
-  method add block = 
+  method add block =
     composite#add block;
     block#set_parent (self :> 'a generic_canvas)
-    
+
   method first =
     match widgets with
       | (_,f)::_ -> f
@@ -210,13 +210,13 @@ end and draggable = object ( self : 'self )
   method set_parent c = parent <- Some c
   method name = ""
 
-  method mouse_down button point = 
-    state <- Dragged; 
+  method mouse_down button point =
+    state <- Dragged;
     dragged_pos <- point;
     BatOption.may (fun parent -> parent # clicked (self :> draggable) button point) parent;
     true
-      
-  method mouse_up _ _ = 
+
+  method mouse_up _ _ =
     (if self#drag_end then
       state <- Normal);
     true
@@ -229,14 +229,14 @@ end and draggable = object ( self : 'self )
       self#drag point new_window_pos dpos;
       true
 
-  method follow_drag dpos =       
+  method follow_drag dpos =
     dragged_pos <- Pos.add dpos dragged_pos;
 
-  method drag point pos dpos = 
+  method drag point pos dpos =
     print_endline "drag";
     Rect.set_pos window.Window.pos pos;
     BatOption.may (fun parent -> parent#dragged (self :> draggable) dpos) parent
-  
+
   method drag_end = true
 
   method paint = button_painter
@@ -245,7 +245,7 @@ end
 
 class fixed = object ( self : 'self )
   inherit draggable
-  method follow_drag dpos = () 
+  method follow_drag dpos = ()
   method drag point pos dpos = ()
   method drag_end = false
   method paint = bg_painter
@@ -254,7 +254,7 @@ end
 class desktop =  object ( self : 'self )
   inherit [ graphical ] composite as super
   inherit fixed
-  initializer 
+  initializer
     ignore(Window.add Window.desktop window)
 end
 
@@ -265,7 +265,7 @@ class draggable_constrained constr = object ( self : 'self )
   inherit draggable
   val mutable constr = constr
   method drag a pos dpos =
-    (match constr with 
+    (match constr with
       | Horizontal -> window.Window.pos.Rect.x <- fst pos
       | Vertical -> window.Window.pos.Rect.y <- snd pos
       | HorizontalWith amount -> window.Window.pos.Rect.x <- ( fst pos + amount / 2 ) / amount * amount);
@@ -276,7 +276,7 @@ end
 class splitter first second constr1 = object ( self : 'self )
   inherit draggable
   inherit canvas as super
-    
+
   val mutable formed = false
   val mutable constr = constr1
   val split_widget = new draggable_constrained constr1
@@ -296,17 +296,17 @@ class splitter first second constr1 = object ( self : 'self )
         match constr with
           | Horizontal ->
             first # invalidate { first_rect with Rect.w = first_rect.Rect.w + dx };
-            second # invalidate { second_rect with 
-              Rect.w = second_rect.Rect.w - dx; 
+            second # invalidate { second_rect with
+              Rect.w = second_rect.Rect.w - dx;
               Rect.x = second_rect.Rect.x + dx }
           | Vertical ->
-            first # invalidate { first_rect with 
+            first # invalidate { first_rect with
               Rect.h = first_rect.Rect.h + dy };
-            second # invalidate { second_rect with 
-              Rect.h = second_rect.Rect.h - dy; 
+            second # invalidate { second_rect with
+              Rect.h = second_rect.Rect.h - dy;
               Rect.y = second_rect.Rect.y + dy }
           | _ -> failwith "splitter.dragged: Not supported"
-        
+
   method invalidate rect =
     (match constr with
       | Horizontal ->
@@ -325,10 +325,10 @@ class splitter first second constr1 = object ( self : 'self )
         split_widget#invalidate (Rect.rect (0,o) (w, 20));
         first#invalidate (Rect.rect (0,0) (w, o));
         second#invalidate (Rect.rect (0, o+20) (w,h-o-20)))
-          
+
 end
 
-let splitter ~first ~second constr = 
+let splitter ~first ~second constr =
   new splitter (first :> draggable) (second :> draggable) constr
 
 type 'a element_tree = Node of string * 'a * 'a element_tree list
@@ -367,7 +367,7 @@ open BatFloat
 (*       | [] -> () *)
 (*     in *)
 (*     loop 0 0 sample_tree *)
-    
+
 (* end *)
 open BatFloat
 
@@ -398,7 +398,7 @@ let text_area_painter line text state rect =
       draw_text x (y+line * 10) text;
       ()
 
-class button name click = 
+class button name click =
 object ( self : 'self )
   inherit fixed as super
   method paint _ = caption_painter name state
@@ -407,7 +407,7 @@ end
 
 let button ~name ~click = new button name click
 
-class label name = 
+class label name =
 object ( self : 'self )
   inherit fixed as super
   val mutable caption = name
@@ -419,23 +419,22 @@ let label ~name ~click = new label name
 
 open BatInt
 
-class slider name left right step default (change : slider -> unit)
+class slider name (left : float) (right : float) step default (change : slider -> unit)
   = object ( self : 'self )
   inherit draggable_constrained Horizontal as super
   val mutable value = 0.
   val mutable step = step
   val mutable drag_value = 0.0
-  val left = left
-  val right = right
+  val left : float = left
+  val right : float = right
   val name = name
-  initializer 
+  initializer
     value <- default
 
-  method clamp v = 
-    let open BatFloat in
-        if v >= left then (if v <= right then v else right) else left
-          
-  method paint rect state = 
+  method clamp (v : float) : float =
+    BatFloat.Compare.(if v >= left then (if v <= right then v else right) else left)
+
+  method paint rect state =
     caption_painter (self#caption (self # clamp (drag_value +. value))) rect state
 
   method drag _ _ (dx,_) =
@@ -451,26 +450,26 @@ class slider name left right step default (change : slider -> unit)
     self # slide_end value;
     change (self :> slider);
     true
-      
+
   method slide_end value = change (self:>slider)
 
-  method caption value = 
+  method caption value =
     Printf.sprintf "%s: %2.2f" name value
 
   (* method value = value *)
 end
 
 open BatFloat
-let round v = 
-  if fst (modf v) >= 0.5 then
+let round v =
+  BatFloat.Compare.(if fst (modf v) >= 0.5 then
     snd (modf v) +. 1.
   else
-    snd (modf v)
+    snd (modf v))
 
 open BatInt
 class int_slider name left right step default change
   = object ( self : 'self )
-  inherit slider 
+  inherit slider
     name
     (float_of_int left)
     (float_of_int right)
@@ -487,14 +486,14 @@ class int_slider name left right step default change
     change (self :> slider);
     true
 
-  method caption value = 
+  method caption value =
     Printf.sprintf "%s: %d" name (int_of_float (round value))
 
   (* method value = value *)
 end
 
-let float_slider 
-    ?min:(min=0.) 
+let float_slider
+    ?min:(min=0.)
     ?max:(max=1.)
     ?step:(step=0.01)
     ?value:(value=0.)
@@ -502,15 +501,15 @@ let float_slider
     name
     = (new slider name min max step value change :> draggable)
 
-let int_slider 
-    ?min:(min=0) 
+let int_slider
+    ?min:(min=0)
     ?max:(max=100)
     ?step:(step=1.)
     ?value:(value=0)
-    ?change:(change=fun (w:slider) -> ()) 
+    ?change:(change=fun (w:slider) -> ())
     name
     = (new int_slider name min max step value change  :> draggable)
-  
+
 module Defaults = struct
   let widget_height = 25
   let widget_width = 25
@@ -519,15 +518,15 @@ end
 module Layout = struct
   type t = Rect.t -> Rect.t -> int -> int -> Rect.t
 
-  let horizontal_fill 
-      ?spacing:(spacing=Defaults.widget_height) 
+  let horizontal_fill
+      ?spacing:(spacing=Defaults.widget_height)
       ?offset:(offset=0)
       parent_rect _ c i =
     let (w,h) = Rect.size parent_rect in
     let s = w / c in
     Rect.rect (offset + (i * s)+spacing, 0) (s-2*spacing- offset,h)
 
-  let vertical_fill 
+  let vertical_fill
       ?spacing:(spacing=Defaults.spacing)
       ?offset:(offset=0)
       parent_rect _ c i =
@@ -535,9 +534,9 @@ module Layout = struct
     let s = h / c in
     Rect.rect (0, offset + (i * s)+spacing) (w, s-2*spacing - offset)
 
-  let vertical 
-      ?spacing:(spacing=Defaults.spacing) 
-      ?size:(height=Defaults.widget_height) 
+  let vertical
+      ?spacing:(spacing=Defaults.spacing)
+      ?size:(height=Defaults.widget_height)
       parent_rect d c i =
     let (w,h) = Rect.size parent_rect in
     if (height + 2 * spacing) * c > h then
@@ -546,9 +545,9 @@ module Layout = struct
       let ofs = i * (height + 2 * spacing) + spacing in
       Rect.rect (spacing, ofs) (w - spacing * 2, height)
 
-  let horizontal 
-      ?spacing:(spacing=Defaults.widget_height) 
-      ?size:(width=Defaults.widget_width) 
+  let horizontal
+      ?spacing:(spacing=Defaults.widget_height)
+      ?size:(width=Defaults.widget_width)
       parent_rect d c i =
     let (w,h) = Rect.size parent_rect in
     if (width + 2 * spacing) * c > w then
@@ -559,8 +558,8 @@ module Layout = struct
 
   let fill parent_rect _ _ _ = Rect.rect (0,0) (Rect.size parent_rect)
   open BatInt
-  let vertical_fixed 
-      ?sizes:(sizes=[Defaults.widget_height]) 
+  let vertical_fixed
+      ?sizes:(sizes=[Defaults.widget_height])
       ?spacing:(spacing=Defaults.spacing)
       parent_rect d c i =
     let n = List.length sizes in
@@ -571,8 +570,8 @@ module Layout = struct
       let accum_size = BatList.reduce ( + ) sizes in
       vertical_fill ~spacing ~offset:accum_size parent_rect d (c-n) (i-n)
 
-  let horizontal_fixed 
-      ?sizes:(sizes=[Defaults.widget_height]) 
+  let horizontal_fixed
+      ?sizes:(sizes=[Defaults.widget_height])
       ?spacing:(spacing=Defaults.spacing)
       parent_rect d c i =
     let n = List.length sizes in
@@ -607,25 +606,25 @@ class menu pos items select = object ( self : 'self)
   initializer
   let max_width = ref 0 in
   widget_items <- List.fold_left (fun acc name -> acc @ [(new label name :> draggable), name]) [] items;
-  List.iter 
-    (fun (widget, name) -> 
+  List.iter
+    (fun (widget, name) ->
       self # add widget;
       let len = text_width name in
       if len > !max_width then
         max_width := len) widget_items;
   self # invalidate (Rect.rect pos (!max_width+20, (List.length items) * 25 + 20))
-    
+
   method clicked widget button pos =
     BatOption.may (fun parent -> parent # remove (self :> draggable)) parent;
     select pos (List.assq widget widget_items);
     ()
-    
+
 end
 
 let menu ~items ~pos ~select =
   new menu pos items select
 
-type menu_entry = 
+type menu_entry =
   | Entry of string * (unit -> unit)
   | SubMenu of string * menu_entry list
 
@@ -641,57 +640,57 @@ object (self : 'self)
   List.iter add_menu_entry definition
 end
 
-let menu_bar definition =   
+let menu_bar definition =
   let entry_size = function Entry (name, _ ) -> text_width name + 5 in
   let sizes = List.map entry_size definition in
   new menu_bar definition sizes
 
-
-open BatStd
-class edit_area =    
+open Batteries
+open BatPervasives
+class edit_area =
 object ( self : 'self )
   inherit fixed as super
   val mutable lines = [""]
   val mutable cursor_col = 0
   val mutable cursor_line = 0
   method paint state rect =
-    BatList.iteri 
-      (fun line text -> 
-        text_area_painter line text state rect) <| List.rev lines;
+    BatList.iteri
+      (fun line text ->
+        text_area_painter line text state rect) @@ List.rev lines;
     let str = List.hd lines in
-    let pos = 
-      if cursor_col = 0 then 0 
+    let pos =
+      if cursor_col = 0 then 0
       else
         let tw = text_width (String.sub str 0 cursor_col) in
         let tw' = 0 in
         (* let tw = text_width (String.sub str (cursor_col-1) 1) in *)
         tw + tw' in
     let rect = Rect.rect (rect.Rect.x + pos-4, rect.Rect.y) (4,10) in
-    text_area_painter (List.length lines - 1) "I" 0 rect; 
+    text_area_painter (List.length lines - 1) "I" 0 rect;
     ()
 
   method event wind = function
     | Event.KeyPress (char, point) ->
       let code = int_of_char char in
       if self # keypress code then
-        (match code with 
+        (match code with
           | 13 -> lines <- "" :: lines; cursor_col <- 0
-          | _ -> 
+          | _ ->
             if code >= 32 && code <= 127 then
               begin
                 lines <- (match lines with
-                  | last :: rest -> 
+                  | last :: rest ->
                     (if code == 127 then
                         let str = List.hd lines in
                         (String.sub str 0 cursor_col)
                         ^ (String.sub str (cursor_col+1) (String.length str - cursor_col - 1))
-                     else 
+                     else
                         (if cursor_col == String.length last then
                             begin
                               cursor_col <- cursor_col + 1;
                               (last ^ BatString.of_char char)
                             end
-                         else 
+                         else
                             let str = List.hd lines in
                             let cc = cursor_col in
                             cursor_col <- cursor_col + 1;
@@ -705,13 +704,13 @@ object ( self : 'self )
       begin
         if self # special_key code then
           match code with
-            | Glut.GLUT_KEY_RIGHT -> 
+            | Glut.GLUT_KEY_RIGHT ->
               begin
-                if cursor_col < String.length (List.hd lines) 
+                if cursor_col < String.length (List.hd lines)
                 then cursor_col <- cursor_col + 1
               end
             | Glut.GLUT_KEY_LEFT -> begin if cursor_col > 0 then cursor_col <- cursor_col - 1 end
-      end; 
+      end;
       true
     | _ -> false
   method special_key _ = true
@@ -729,7 +728,7 @@ end
 
 let completion_box ?completion_func:(completion_func=(fun str -> [str])) () =
   ((new completion_box completion_func) :> draggable)
-      
+
 
 (* class content_pane = object (self : 'self) *)
 

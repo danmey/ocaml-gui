@@ -27,7 +27,7 @@ open BatFloat
 (*       GlMat.load_identity (); *)
 (*       let x, y, z,w = xw#value, yw#value, zw#value, ww#value in *)
 (*       let h = w in *)
-      
+
 (*       GluMat.look_at *)
 (*         ~eye:(x, y, z) *)
 (*         ~center:(0.0, 0.0, 0.0) *)
@@ -44,7 +44,7 @@ open BatFloat
 (*       (\* GlDraw.vertex ~x:0. ~y:10. ~z:1.1; *\) *)
 (*       (\* GlDraw.ends (); *\) *)
 (*       Glut.glutSolidCube ~size:1.0;  *)
-      
+
 (*       GlMat.mode `projection; *)
 (*       GlMat.pop (); *)
 (*     (\*   GlMat.mode `modelview; *\) *)
@@ -72,11 +72,11 @@ let texture_generator_view() =
           in
           params
         in
-        let start_rect = 
-            BatOption.map (fun (_,b) -> (b # window.pos)) 
+        let start_rect =
+            BatOption.map (fun (_,b) -> (b # window.pos))
               (BatList.Exceptionless.find (fun (_,b) -> b # get_state == Selected) graphical_pane#widgets) in
         let rec find_all_macros = function
-          | (_,w) :: xs -> 
+          | (_,w) :: xs ->
             if Pervasives.(w # key = "MACRO") then
               let rect = w # window.pos in
               let tree = graphical_pane#layout (Some rect) in
@@ -121,8 +121,8 @@ let texture_generator_view() =
                          ldy = f "ldy"; }, loop (List.hd lst))
               | "distort" ->
                 let op1::op2::op3::_ = lst in
-                Distort ({ dtype=Radial; 
-                           dscale = f "dscale"}, 
+                Distort ({ dtype=Radial;
+                           dscale = f "dscale"},
                          loop op1, loop op2, loop op3)
               | "rgb" -> Printf.printf "lst::%d\n" (List.length lst); let r::g::b::_ = lst in
                          Rgb ({ rp = f "rp";
@@ -136,10 +136,10 @@ let texture_generator_view() =
               | "phi3" -> Phi3 ({ scale1 = f "scale1";
                                  base1 = f "base1";
                                  scale2 = f "scale2";
-                                 base2 = f "base2"; 
+                                 base2 = f "base2";
                                  scale3 = f "scale3";
-                                 base3 = f "base3"; 
-                               }, 
+                                 base3 = f "base3";
+                               },
                                loop (List.hd lst))
               | "MACRO" -> loop (List.hd lst)
               | "CALL" -> loop (List.assoc (i "id") macros)
@@ -147,7 +147,7 @@ let texture_generator_view() =
                 Modulate (List.map loop lst)
               | "invert" ->
                 Invert (loop (List.hd lst)))
-              
+
 
         in
         let op2 = loop tree in
@@ -170,8 +170,8 @@ let texture_generator_view() =
       property_pane # add (edit_pane  :> fixed);
       let main_view = splitter ~first:split_control ~second:graphical_pane Widget.Horizontal in
       let main_frame = new frame (Layout.vertical_fixed ~sizes:[25]) in
-      main_frame#add ((menu_bar 
-                         [Entry ("Save", 
+      main_frame#add ((menu_bar
+                         [Entry ("Save",
                                  (fun () -> graphical_pane # write !project_name;
                                   save_texture (!project_name ^ ".tga");
                           ));
@@ -188,14 +188,11 @@ let texture_generator_view() =
 
 let commandline_spec =
   let open Arg in
-  let open BatArg in
-  [ command ~doc:"Filename of a project to work with. Default project is \"canvas.txt\"."
-    "-project"
-    (Set_string project_name)]
+  [ "-project", Set_string project_name,"Filename of a project to work with. Default project is \"canvas.txt\"."]
 
 
 let b () =
-  BatArg.handle commandline_spec;
+  Arg.parse commandline_spec;
   let open BatInt in
   let g = new desktop in
   let tgv = ((texture_generator_view()) :> graphical) in
@@ -203,7 +200,7 @@ let b () =
     (fun () ->
       (* Png_loader.load_img (Filename "ala"); *)
       g#add tgv;
-      
+
       ())
     (fun ~width ~height ->
        Window.shelf (Rect.rect (0,0) (width,height));

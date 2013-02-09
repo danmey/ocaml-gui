@@ -7,8 +7,8 @@ type stickiness = TopBottom | LeftRight
 
 let expand_rect_left dx rect constr =
   let real_dx = ( dx / constr) * constr in
-  { rect with 
-    Rect.x = rect.Rect.x + real_dx; 
+  { rect with
+    Rect.x = rect.Rect.x + real_dx;
     Rect.w = rect.Rect.w - real_dx }
 
 let block_cmp l r =
@@ -19,7 +19,7 @@ let block_cmp l r =
 
 
 type 'a property_value = { min : 'a; max : 'a; default : 'a; step : float }
-type property_type = 
+type property_type =
   | Float of float property_value
   | Int of int property_value
 
@@ -27,13 +27,13 @@ type property = string * property_type
 
 class properties props change = object (self : 'self)
   inherit frame (Layout.vertical)
-    
+
   initializer
     List.iter
       (function
-      | (name, Float { min; max; default; step }) -> 
+      | (name, Float { min; max; default; step }) ->
         self # add (float_slider ~value:default ~min ~max ~step ~change name)
-      | (name, Int { min; max; default; step }) -> 
+      | (name, Int { min; max; default; step }) ->
         self # add (int_slider ~value:default ~min ~max ~step ~change name))
       props
 
@@ -49,9 +49,9 @@ let properties
     ?change:(change=(fun _ -> ()))
     definition =
   new properties definition change
-    
+
 (* end and block name = object ( self : 'self ) *)
-class block name click selected = object ( self : 'self ) 
+class block name click selected = object ( self : 'self )
   inherit canvas as canvas
   inherit draggable as super
   val left_border = new draggable_constrained (HorizontalWith 10)
@@ -61,7 +61,7 @@ class block name click selected = object ( self : 'self )
   initializer
     canvas#add left_border;
     canvas#add right_border
-    
+
   method drag _ (x,y) (dx,dy) =
     let grid x = (x + 5) / 10 * 10 in
     window.pos.Rect.x <- grid x;
@@ -113,16 +113,16 @@ class block name click selected = object ( self : 'self )
               | _ -> super # mouse_down b p
           end
         | _ -> super # mouse_down b p
-      
+
   method key = name
   method focus is = focus <- is
 
   method paint state = caption_painter2 self # name state
-        
+
 end
 
-let block 
-    ?click:(click = fun _ _ -> false) 
+let block
+    ?click:(click = fun _ _ -> false)
     ?select:(select = fun _ -> ()) name =
   new block name click select
 
@@ -152,17 +152,17 @@ class texture_preview = object ( self : 'self )
         glVertex3 ~x ~y:(y + h) ~z:0.;
         glEnd ();
         glDisable GL_TEXTURE_2D) texid; ()
-        
+
     method set_image id = texid <- Some id
-    
+
 end
 
 let property_pane = new frame Layout.fill
 
-let properties_definition = 
+let properties_definition =
   ["perlin",[
     "persistence", Float { min = 0.; max = 3.; default = 0.25; step = 0.01 };
-    "octaves", Int { min=1; max=8; default=1; step = 0.2 }; 
+    "octaves", Int { min=1; max=8; default=1; step = 0.2 };
     "seed", Int { min=0; max=9; default=1; step=0.2};
    ];
    "add",[
@@ -215,7 +215,7 @@ let properties_definition =
       "modulate", [];
       "invert", [];
   ]
-    
+
 type 'a block_tree = Tree of 'a * 'a block_tree list
 class block_canvas generate draw = object ( self : 'self)
   inherit canvas as canvas
@@ -241,10 +241,10 @@ class block_canvas generate draw = object ( self : 'self)
     let open BatInt in
     let rects = List.map (fun (_,w) -> w # window.pos) widgets in
     let block_rects = List.map (fun (_,w) -> w # window.pos,w) widgets in
-    let widget_properties = List.combine rects 
+    let widget_properties = List.combine rects
       (List.map (fun (w,_) ->
         List.assq w block_properties) widgets) in
-    let sorted = BatList.sort ~cmp:block_cmp rects in
+    let sorted = BatList.sort block_cmp rects in
     let rec stack_loop acc cur_y = function
       | x :: xs when x.Rect.y = cur_y ->
         (match acc with
@@ -254,7 +254,7 @@ class block_canvas generate draw = object ( self : 'self)
       | [] -> List.rev acc in
       let open Pervasives in
         let rec loop acc = function
-          | ({ Rect.x=x1; Rect.w=w1; } as r1) :: xs, ({ Rect.x=x2; Rect.w=w2; } as r2) :: ys -> 
+          | ({ Rect.x=x1; Rect.w=w1; } as r1) :: xs, ({ Rect.x=x2; Rect.w=w2; } as r2) :: ys ->
             if x2 >= x1 && x2 < x1 + w1 (*&& x2 + w2 <= x1 + w1*) then
               match acc with
                 | [] ->  loop [r1, [r2]] ((r1 :: xs), ys)
@@ -292,7 +292,7 @@ class block_canvas generate draw = object ( self : 'self)
     let lst = stack_loop [[]] start_rect.Rect.y start_sorted in
     print_endline "stack_loop-----";
     List.iter (fun (lst) -> Printf.printf "(%s)\n" (String.concat " | " (List.map Rect.string_of_rect lst))) lst;
-    
+
     match lst with
       | (r::_) :: [] -> Tree ((List.assoc r widget_properties, (List.assoc r block_rects)), [])
       | lst -> (let lst = flat_loop lst in
@@ -303,7 +303,7 @@ class block_canvas generate draw = object ( self : 'self)
     print_endline "-----";
     print_endline "-----";
     (match lst with
-      | hd :: tl -> 
+      | hd :: tl ->
         begin
           let tree = tree_loop lst hd in
           let rec print_tree = function
@@ -320,8 +320,8 @@ class block_canvas generate draw = object ( self : 'self)
           in
           block_tree tree
         end))
-    
-      
+
+
 
   method focus_block block =
     BatOption.may (fun block -> block # focus false) focused_block;
@@ -331,7 +331,7 @@ class block_canvas generate draw = object ( self : 'self)
   method create_block item pos =
     let definition = List.assoc item properties_definition in
     let properties = properties definition ~change:(fun _ -> generate self) in
-    let b = block 
+    let b = block
       ~click:(fun button block -> self # click_block button block)
       ~select:(fun block -> List.iter (fun (_,w) -> if w != block then w # set_state Normal) widgets)
       item in
@@ -342,12 +342,12 @@ class block_canvas generate draw = object ( self : 'self)
     self # focus_block b;
     property_pane # revalidate;
     b, properties
-    
+
   method select_menu _ item =
     self # create_block item (Rect.rect last_mouse_pos (80, 20));
     property_pane # revalidate;
     true
-          
+
   method click_block button block =
     match button with
       | Event.Left ->
@@ -371,14 +371,14 @@ class block_canvas generate draw = object ( self : 'self)
 
   method write file_name =
     let properties_string property_panel =
-      String.concat " " 
-        (List.map 
-           (fun (_,property) -> Printf.sprintf ":%s %s" (property # key) 
+      String.concat " "
+        (List.map
+           (fun (_,property) -> Printf.sprintf ":%s %s" (property # key)
              (match property # value with
                | Event.Float f -> string_of_float f
-               | Event.Int i -> string_of_float (float i))) property_panel#widgets) 
+               | Event.Int i -> string_of_float (float i))) property_panel#widgets)
     in
-    let str = 
+    let str =
       String.concat "\n"
         (List.map
            (fun (blockw, properties) ->
@@ -401,7 +401,7 @@ class block_canvas generate draw = object ( self : 'self)
           print_endline key;
           print_endline value;
           let value' = float_of_string value in
-          
+
           ((properties # get key) :> draggable) # set_value value';
           update_parameters properties offset' line_rest
         with Not_found -> print_endline "First regexp not found!"
@@ -416,7 +416,7 @@ class block_canvas generate draw = object ( self : 'self)
      print_endline (string_of_int x);
       print_endline (Str.matched_group 6 line);
       flush stdout;
-       let block, properties = self # create_block name (Rect.rect (x,y) (w,h)) in 
+       let block, properties = self # create_block name (Rect.rect (x,y) (w,h)) in
        update_parameters properties 0 (Str.matched_group 6 line);
         with Not_found -> print_endline "Second regexp not found!"
     in
